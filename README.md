@@ -4,8 +4,9 @@ Live translator in your AirPods. Sister app to [NodVoice](https://github.com/Gia
 
 You pick the language they speak and the language you want to hear. Grok transcribes, translates, and talks.
 
-1. **Listen** - one mic. Grok STT detects the language. If it matches **They speak**, translation plays in your AirPods. If it matches **I hear**, it speaks out + big text.
-2. **Force: they talk / I talk** if the guess is wrong.
+1. **Listen** - one mic. Grok STT detects the language.
+   - Their language → Eve in your ear (speaker if AirPods are out) + big text in your language.
+   - Your language → Eve out loud + big text in their language.
 
 No API key. Sign in with SuperGrok.
 
@@ -30,26 +31,26 @@ open EarTalk.xcodeproj
 2. Build to your iPhone
 3. Open the app, Settings, Sign in with SuperGrok
 4. Put AirPods in, grant mic permission
-5. Set **They speak** / **I hear**
-6. Point the phone at them, tap **Hear them**. Pause. Translation lands in your ear.
-7. Tap **I speak**, talk, pause. They hear it and see the big text.
+5. Set **They speak** / **I speak**
+6. Tap **Listen**. Pause after either of you talks. Language picks the side.
 
 ## How the loop works
 
 ```
-They talk  ->  phone mic  ->  Grok STT (their language)
-           ->  Grok chat translate
-           ->  Grok TTS in your language  ->  AirPods
+They talk  ->  phone mic  ->  Grok STT
+           ->  matches They speak
+           ->  Grok TTS in your language  ->  AirPods (or speaker)
+           ->  big text in your language
 
-You talk   ->  mic  ->  Grok STT (your language)
-           ->  Grok chat translate
+You talk   ->  phone mic  ->  Grok STT
+           ->  matches I speak
            ->  Grok TTS in their language  ->  speaker
-           ->  full-screen caption for them to read
+           ->  big text in their language
 ```
 
-Silence of about 1.5s ends a turn. Hear them keeps listening after each ear playback. I speak shows the caption until you tap Done.
+Silence of about 1.5s ends a turn. Their side auto-continues after the ear playback. Your side keeps the caption until Done, then Listen again.
 
-Point the phone at them when they talk. AirPods mic would hear you, not them, so Hear them forces the built-in mic.
+AirPods are optional. Out = no Bluetooth, your side plays on the speaker. Mic is always the phone when they talk.
 
 ## Architecture
 

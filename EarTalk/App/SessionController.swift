@@ -16,6 +16,7 @@ final class SessionController: ObservableObject {
     @Published var whoLabel: String = ""
     @Published var grokSignedIn = SuperGrokSession.isSignedIn
     @Published var headphonesWorn = Headphones.areWorn()
+    @Published var captionHolds = false
 
     let capture = AudioCaptureService()
     let player = SpeechPlayer()
@@ -138,7 +139,7 @@ final class SessionController: ObservableObject {
         keepListening = true
         listenMode = .locked(.themToMe)
         classifiedDirection = .themToMe
-        whoLabel = "Them"
+        whoLabel = "They speak"
         beginCapture()
     }
 
@@ -146,7 +147,7 @@ final class SessionController: ObservableObject {
         keepListening = false
         listenMode = .locked(.meToThem)
         classifiedDirection = .meToThem
-        whoLabel = "You"
+        whoLabel = "I speak"
         beginCapture()
     }
 
@@ -161,6 +162,8 @@ final class SessionController: ObservableObject {
         liveTranscript = ""
         liveTranslation = ""
         whoLabel = ""
+        captionHolds = false
+        showCaptionBoard = false
     }
 
     func resetToIdle() {
@@ -170,8 +173,19 @@ final class SessionController: ObservableObject {
         debugLine = ""
     }
 
+    func presentCaption(_ turn: ConversationTurn, hold: Bool) {
+        captionTurn = turn
+        captionHolds = hold
+        showCaptionBoard = true
+    }
+
     func dismissCaption() {
+        let shouldResume = keepListening && captionHolds
         showCaptionBoard = false
+        captionHolds = false
+        if shouldResume, !phase.isCapturing {
+            beginCapture()
+        }
     }
 
     /// Headless drive: `xcrun simctl launch <udid> com.gianlucaminoprio.eartalk speak`
@@ -233,6 +247,8 @@ final class SessionController: ObservableObject {
         liveTranscript = ""
         liveTranslation = ""
         lastDetectedLanguage = nil
+        showCaptionBoard = false
+        captionHolds = false
         if listenMode == .auto {
             classifiedDirection = nil
             whoLabel = ""
@@ -361,7 +377,7 @@ final class SessionController: ObservableObject {
                 their: settings.theirLang
             )
             classifiedDirection = result.0
-            whoLabel = result.0 == .themToMe ? "Them" : "You"
+            whoLabel = result.0 == .themToMe ? "They speak" : "I speak"
             applyListeningPhase()
         }
     }
@@ -450,8 +466,9 @@ final class SessionController: ObservableObject {
             if history.count > 30 { history = Array(history.prefix(30)) }
 
             if direction == .themToMe {
+                presentCaption(turn, hold: false)
                 phase = .playingEar
-                debugLine = "Eve in your ear…"
+                debugLine = ""
                 let audio = try await client.synthesize(
                     text: translated,
                     bearer: bearer,
@@ -463,6 +480,7 @@ final class SessionController: ObservableObject {
                 let inbound: AudioRoute = headphonesWorn ? .earbuds : .speaker
                 try await player.play(data: audio, route: inbound, volume: Float(settings.earVolume))
                 try Task.checkCancellation()
+                showCaptionBoard = false
                 if keepListening {
                     beginCapture()
                 } else {
@@ -470,10 +488,9 @@ final class SessionController: ObservableObject {
                     debugLine = ""
                 }
             } else {
-                captionTurn = turn
-                showCaptionBoard = true
+                presentCaption(turn, hold: true)
                 phase = .playingSpeaker
-                debugLine = "Speaking out…"
+                debugLine = ""
                 let audio = try await client.synthesize(
                     text: translated,
                     bearer: bearer,
@@ -483,12 +500,8 @@ final class SessionController: ObservableObject {
                 try Task.checkCancellation()
                 try await player.play(data: audio, route: .speaker, volume: Float(settings.speakerVolume))
                 try Task.checkCancellation()
-                if keepListening, listenMode == .auto {
-                    beginCapture()
-                } else {
-                    phase = .idle
-                    debugLine = "Hold the screen toward them"
-                }
+                phase = .idle
+                debugLine = ""
             }
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         } catch is CancellationError {
@@ -551,7 +564,7 @@ final class SessionController: ObservableObject {
 
         if direction == .themToMe {
             phase = .hearingThem
-            whoLabel = "Them"
+            whoLabel = "They speak"
             debugLine = ""
             liveTranscript = DemoLines.themSaid(settings.theirLang)
             try? await Task.sleep(nanoseconds: 900_000_000)
@@ -568,15 +581,16 @@ final class SessionController: ObservableObject {
                 targetLanguage: settings.myLanguage
             )
             history.insert(turn, at: 0)
+            presentCaption(turn, hold: false)
             phase = .playingEar
-            debugLine = "Demo ear playback skipped"
-            try? await Task.sleep(nanoseconds: 700_000_000)
+            debugLine = ""
+            try? await Task.sleep(nanoseconds: 900_000_000)
             guard !Task.isCancelled else { return }
+            showCaptionBoard = false
             phase = .idle
-            debugLine = "Tap Listen again for the other side"
         } else {
             phase = .hearingMe
-            whoLabel = "You"
+            whoLabel = "I speak"
             debugLine = ""
             liveTranscript = DemoLines.meSaid(settings.myLang)
             try? await Task.sleep(nanoseconds: 900_000_000)
@@ -593,14 +607,12 @@ final class SessionController: ObservableObject {
                 targetLanguage: settings.theirLanguage
             )
             history.insert(turn, at: 0)
-            captionTurn = turn
-            showCaptionBoard = true
+            presentCaption(turn, hold: true)
             phase = .playingSpeaker
-            debugLine = "Demo speaker playback skipped"
+            debugLine = ""
             try? await Task.sleep(nanoseconds: 600_000_000)
             guard !Task.isCancelled else { return }
             phase = .idle
-            debugLine = "Hold the screen toward them"
         }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }

@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// Huge text for the person in front. They can read while Grok speaks their language.
+/// Huge translation. Them → you: your language. You → them: their language.
 struct CaptionBoardView: View {
     let turn: ConversationTurn
     var onDone: () -> Void
+
+    private var isForYou: Bool { turn.direction == .themToMe }
 
     var body: some View {
         NavigationStack {
@@ -34,7 +36,7 @@ struct CaptionBoardView: View {
                 Spacer(minLength: 8)
             }
             .padding()
-            .navigationTitle("Show them")
+            .navigationTitle(isForYou ? "For you" : "Show them")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

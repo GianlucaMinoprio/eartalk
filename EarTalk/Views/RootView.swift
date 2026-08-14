@@ -19,7 +19,9 @@ struct RootView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle(session.phase == .playingSpeaker ? "Show them" : "EarTalk")
+            .navigationTitle(session.showCaptionBoard
+                             ? (session.captionTurn?.direction == .themToMe ? "For you" : "Show them")
+                             : "EarTalk")
             .navigationBarTitleDisplayMode(session.isLiveTurn ? .inline : .large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -31,25 +33,13 @@ struct RootView: View {
                 }
 
                 ToolbarItemGroup(placement: .bottomBar) {
-                    if session.showsStop {
+                    if session.showsStop, !session.phase.isCapturing {
                         Button("Stop", role: .destructive) {
                             session.stopSession()
                         }
                     }
 
                     Spacer()
-
-                    Menu {
-                        Button("They talk", systemImage: "ear") {
-                            session.startHearingThem()
-                        }
-                        Button("I talk", systemImage: "mic") {
-                            session.startHearingMe()
-                        }
-                    } label: {
-                        Label("Force", systemImage: "hand.point.up.left")
-                    }
-                    .disabled(session.isBusy && !session.phase.isCapturing)
 
                     Button {
                         if session.phase.isCapturing {
@@ -139,22 +129,16 @@ struct RootView: View {
             return "Sign in with SuperGrok first. Listen still runs a demo."
         case .ready:
             switch session.phase {
-            case .listening, .hearingThem:
-                return session.headphonesWorn
-                    ? "Point the phone at them. Pause and it lands in your ear."
-                    : "Point the phone at them. No AirPods, so the translation plays on speaker."
-            case .hearingMe:
-                return "Talk. Pause, then they hear it and see the text."
+            case .listening, .hearingThem, .hearingMe:
+                return "One mic. Their language goes in your ear. Yours goes out loud."
             case .playingEar:
                 return session.headphonesWorn
-                    ? "Translation is in your AirPods."
-                    : "No AirPods. Playing on the speaker."
+                    ? "In your ear, and on screen in your language."
+                    : "On the speaker and on screen in your language."
             case .playingSpeaker:
                 return "Hold the screen toward them."
             default:
-                return session.headphonesWorn
-                    ? "Listen. I guess who spoke from the language."
-                    : "AirPods out. Your side plays on the speaker."
+                return "Listen. I pick a side from the two languages you set."
             }
         }
     }
@@ -170,7 +154,7 @@ struct RootView: View {
                 }
             }
 
-            Picker("I hear", selection: Binding(
+            Picker("I speak", selection: Binding(
                 get: { session.settings.myLanguage },
                 set: { session.settings.myLanguage = $0; session.saveSettings() }
             )) {
@@ -218,10 +202,9 @@ struct RootView: View {
             Section {
                 ForEach(session.history.prefix(5)) { turn in
                     Button {
-                        if turn.direction == .meToThem {
-                            session.captionTurn = turn
-                            session.showCaptionBoard = true
-                        }
+                        session.captionTurn = turn
+                        session.captionHolds = false
+                        session.showCaptionBoard = true
                     } label: {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(turn.translatedText)
@@ -240,7 +223,7 @@ struct RootView: View {
             } header: {
                 Text("Recent")
             } footer: {
-                Text("Tap a line you said to show it big again.")
+                Text("Tap a line to show it big again.")
             }
         }
     }

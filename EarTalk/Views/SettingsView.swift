@@ -61,7 +61,7 @@ struct SettingsView: View {
                             Text(item.name).tag(item.id)
                         }
                     }
-                    Picker("I hear", selection: $myLanguage) {
+                    Picker("I speak", selection: $myLanguage) {
                         ForEach(SpokenLanguage.catalog) { item in
                             Text(item.name).tag(item.id)
                         }
@@ -101,11 +101,11 @@ struct SettingsView: View {
 
                 Section {
                     LabeledContent("Listen") {
-                        Text("Guesses them vs you")
+                        Text("Their language in your ear. Yours out loud.")
                             .foregroundStyle(.secondary)
                     }
-                    LabeledContent("Force") {
-                        Text("They talk or I talk")
+                    LabeledContent("Caption") {
+                        Text("Big text every turn")
                             .foregroundStyle(.secondary)
                     }
                     LabeledContent("App") {

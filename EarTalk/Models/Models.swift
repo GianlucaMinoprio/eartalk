@@ -21,7 +21,7 @@ enum SessionPhase: Equatable {
         case .hearingThem: return "Hearing them"
         case .transcribingThem: return "Hearing them"
         case .translatingThem: return "Translating"
-        case .playingEar: return "In your ear"
+        case .playingEar: return "For you"
         case .hearingMe: return "Hearing you"
         case .transcribingMe: return "Hearing you"
         case .translatingMe: return "Translating"
