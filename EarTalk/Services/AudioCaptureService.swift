@@ -110,45 +110,90 @@ enum AudioScene {
     case playSpeaker
 }
 
+enum Headphones {
+    /// True only when buds are actually on the current route or offered as an input.
+    /// In the case they disappear. Do not IMU-gate EarTalk on this.
+    static func areWorn() -> Bool {
+        let session = AVAudioSession.sharedInstance()
+        let budPorts: Set<AVAudioSession.Port> = [
+            .bluetoothA2DP, .bluetoothHFP, .bluetoothLE, .headphones, .headsetMic
+        ]
+        if session.currentRoute.outputs.contains(where: { budPorts.contains($0.portType) }) {
+            return true
+        }
+        if session.currentRoute.inputs.contains(where: { budPorts.contains($0.portType) }) {
+            return true
+        }
+        if session.availableInputs?.contains(where: { budPorts.contains($0.portType) }) == true {
+            return true
+        }
+        return false
+    }
+}
+
 enum AudioRouter {
     static func configure(for scene: AudioScene) throws {
         let session = AVAudioSession.sharedInstance()
+        let buds = Headphones.areWorn()
         try? session.setActive(false, options: .notifyOthersOnDeactivation)
 
         switch scene {
         case .listenThem:
-            // Built-in mic hears them. Playback later goes to AirPods.
-            try session.setCategory(
-                .playAndRecord,
-                mode: .default,
-                options: [.allowBluetoothA2DP]
-            )
+            // Built-in mic hears them. Never the AirPods mic.
+            var options: AVAudioSession.CategoryOptions = []
+            if buds {
+                options.insert(.allowBluetoothA2DP)
+            } else {
+                options.insert(.defaultToSpeaker)
+            }
+            try session.setCategory(.playAndRecord, mode: .default, options: options)
             try session.setActive(true, options: .notifyOthersOnDeactivation)
-            try session.overrideOutputAudioPort(.none)
+            if buds {
+                try session.overrideOutputAudioPort(.none)
+            } else {
+                try session.overrideOutputAudioPort(.speaker)
+            }
             if let builtIn = session.availableInputs?.first(where: { $0.portType == .builtInMic }) {
                 try? session.setPreferredInput(builtIn)
             }
         case .listenMe:
-            try session.setCategory(
-                .playAndRecord,
-                mode: .spokenAudio,
-                options: [.allowBluetooth, .allowBluetoothA2DP]
-            )
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-            try session.overrideOutputAudioPort(.none)
-            if let buds = session.availableInputs?.first(where: {
-                $0.portType == .bluetoothHFP || $0.portType == .headsetMic
-            }) {
-                try? session.setPreferredInput(buds)
+            if buds {
+                try session.setCategory(
+                    .playAndRecord,
+                    mode: .spokenAudio,
+                    options: [.allowBluetooth, .allowBluetoothA2DP]
+                )
+                try session.setActive(true, options: .notifyOthersOnDeactivation)
+                try session.overrideOutputAudioPort(.none)
+                if let budsIn = session.availableInputs?.first(where: {
+                    $0.portType == .bluetoothHFP || $0.portType == .headsetMic
+                }) {
+                    try? session.setPreferredInput(budsIn)
+                }
+            } else {
+                try session.setCategory(
+                    .playAndRecord,
+                    mode: .default,
+                    options: [.defaultToSpeaker]
+                )
+                try session.setActive(true, options: .notifyOthersOnDeactivation)
+                try session.overrideOutputAudioPort(.speaker)
+                if let builtIn = session.availableInputs?.first(where: { $0.portType == .builtInMic }) {
+                    try? session.setPreferredInput(builtIn)
+                }
             }
         case .playEar:
-            try session.setCategory(
-                .playAndRecord,
-                mode: .spokenAudio,
-                options: [.allowBluetoothA2DP, .allowBluetooth]
-            )
-            try session.setActive(true, options: .notifyOthersOnDeactivation)
-            try session.overrideOutputAudioPort(.none)
+            if buds {
+                try session.setCategory(
+                    .playAndRecord,
+                    mode: .spokenAudio,
+                    options: [.allowBluetoothA2DP, .allowBluetooth]
+                )
+                try session.setActive(true, options: .notifyOthersOnDeactivation)
+                try session.overrideOutputAudioPort(.none)
+            } else {
+                try configure(for: .playSpeaker)
+            }
         case .playSpeaker:
             try session.setCategory(
                 .playAndRecord,

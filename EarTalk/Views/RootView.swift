@@ -121,6 +121,11 @@ struct RootView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+
+            LabeledContent("AirPods") {
+                Text(session.headphonesWorn ? "In" : "Out")
+                    .foregroundStyle(session.headphonesWorn ? Color.secondary : Color.orange)
+            }
         } header: {
             Text("Session")
         } footer: {
@@ -135,15 +140,21 @@ struct RootView: View {
         case .ready:
             switch session.phase {
             case .listening, .hearingThem:
-                return "Point the phone at them. Pause and it lands in your ear."
+                return session.headphonesWorn
+                    ? "Point the phone at them. Pause and it lands in your ear."
+                    : "Point the phone at them. No AirPods, so the translation plays on speaker."
             case .hearingMe:
                 return "Talk. Pause, then they hear it and see the text."
             case .playingEar:
-                return "Translation is in your AirPods."
+                return session.headphonesWorn
+                    ? "Translation is in your AirPods."
+                    : "No AirPods. Playing on the speaker."
             case .playingSpeaker:
                 return "Hold the screen toward them."
             default:
-                return "Listen. I guess who spoke from the language."
+                return session.headphonesWorn
+                    ? "Listen. I guess who spoke from the language."
+                    : "AirPods out. Your side plays on the speaker."
             }
         }
     }

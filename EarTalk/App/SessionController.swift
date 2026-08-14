@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import UIKit
+import AVFoundation
 
 @MainActor
 final class SessionController: ObservableObject {
@@ -14,6 +15,7 @@ final class SessionController: ObservableObject {
     @Published var captionTurn: ConversationTurn?
     @Published var whoLabel: String = ""
     @Published var grokSignedIn = SuperGrokSession.isSignedIn
+    @Published var headphonesWorn = Headphones.areWorn()
 
     let capture = AudioCaptureService()
     let player = SpeechPlayer()
@@ -27,6 +29,7 @@ final class SessionController: ObservableObject {
     private var classifiedDirection: TalkDirection?
     private var lastDetectedLanguage: String?
     private var lastAutoWasThem = true
+    private var routeObserver: NSObjectProtocol?
 
     private enum ListenMode: Equatable {
         case auto
@@ -92,6 +95,21 @@ final class SessionController: ObservableObject {
 
     func onAppear() {
         refreshGrokAuth()
+        refreshHeadphones()
+        guard routeObserver == nil else { return }
+        routeObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.routeChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshHeadphones()
+            }
+        }
+    }
+
+    func refreshHeadphones() {
+        headphonesWorn = Headphones.areWorn()
     }
 
     func refreshGrokAuth() {
@@ -208,6 +226,7 @@ final class SessionController: ObservableObject {
     // MARK: - Capture
 
     private func beginCapture() {
+        refreshHeadphones()
         pipelineTask?.cancel()
         listenTask?.cancel()
         player.stop()
@@ -440,7 +459,9 @@ final class SessionController: ObservableObject {
                     language: to.ttsCode
                 )
                 try Task.checkCancellation()
-                try await player.play(data: audio, route: .earbuds, volume: Float(settings.earVolume))
+                refreshHeadphones()
+                let inbound: AudioRoute = headphonesWorn ? .earbuds : .speaker
+                try await player.play(data: audio, route: inbound, volume: Float(settings.earVolume))
                 try Task.checkCancellation()
                 if keepListening {
                     beginCapture()

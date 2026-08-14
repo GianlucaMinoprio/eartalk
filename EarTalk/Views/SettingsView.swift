@@ -80,7 +80,11 @@ struct SettingsView: View {
                 } header: {
                     Text("Ear voice")
                 } footer: {
-                    Text(signedIn ? "Tap play to hear a sample in your AirPods." : "Sign in to preview voices.")
+                    Text(signedIn
+                         ? (Headphones.areWorn()
+                            ? "Tap play to hear a sample in your AirPods."
+                            : "AirPods are out. Preview plays on the speaker.")
+                         : "Sign in to preview voices.")
                 }
 
                 Section {
