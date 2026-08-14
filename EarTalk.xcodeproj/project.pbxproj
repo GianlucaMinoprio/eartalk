@@ -18,6 +18,7 @@
 		A4BF59E02CD545B09828854B /* SpokenLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5F34DD28EF4B22930EBBF5 /* SpokenLanguage.swift */; };
 		DA85AA64590949F3AF2719DE /* DemoLines.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0E68A9DAF8481B8FD96812 /* DemoLines.swift */; };
 		4FE7561136064E7FB37ADB35 /* SpeakerSense.swift in Sources */ = {isa = PBXBuildFile; fileRef = 718FF600947A4CC79E7C8E9A /* SpeakerSense.swift */; };
+		C8E1A2B3D4F6478890A1B2C3 /* TranscriptMerge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F0E1A2B3C4478890A1B2C4 /* TranscriptMerge.swift */; };
 		DF611E7475CC4AF9B24D74CB /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FE1DC907E8400583E83391 /* RootView.swift */; };
 		8B4A804852604D60A6D7A2F4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89826E0EFF354192A96F4D03 /* SettingsView.swift */; };
 		BEB99ECA50AD499E92FEB76D /* SuperGrokSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61919C96C42D4A549DB63140 /* SuperGrokSignInView.swift */; };
@@ -37,6 +38,7 @@
 		FB5F34DD28EF4B22930EBBF5 /* SpokenLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpokenLanguage.swift; sourceTree = "<group>"; };
 		FC0E68A9DAF8481B8FD96812 /* DemoLines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoLines.swift; sourceTree = "<group>"; };
 		718FF600947A4CC79E7C8E9A /* SpeakerSense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerSense.swift; sourceTree = "<group>"; };
+		D9F0E1A2B3C4478890A1B2C4 /* TranscriptMerge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptMerge.swift; sourceTree = "<group>"; };
 		C0FE1DC907E8400583E83391 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		89826E0EFF354192A96F4D03 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		61919C96C42D4A549DB63140 /* SuperGrokSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperGrokSignInView.swift; sourceTree = "<group>"; };
@@ -103,6 +105,7 @@
 				FB5F34DD28EF4B22930EBBF5 /* SpokenLanguage.swift */,
 				FC0E68A9DAF8481B8FD96812 /* DemoLines.swift */,
 				718FF600947A4CC79E7C8E9A /* SpeakerSense.swift */,
+				D9F0E1A2B3C4478890A1B2C4 /* TranscriptMerge.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -217,6 +220,7 @@
 				A4BF59E02CD545B09828854B /* SpokenLanguage.swift in Sources */,
 				DA85AA64590949F3AF2719DE /* DemoLines.swift in Sources */,
 				4FE7561136064E7FB37ADB35 /* SpeakerSense.swift in Sources */,
+				C8E1A2B3D4F6478890A1B2C3 /* TranscriptMerge.swift in Sources */,
 				DF611E7475CC4AF9B24D74CB /* RootView.swift in Sources */,
 				8B4A804852604D60A6D7A2F4 /* SettingsView.swift in Sources */,
 				BEB99ECA50AD499E92FEB76D /* SuperGrokSignInView.swift in Sources */,

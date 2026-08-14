@@ -22,6 +22,7 @@ SWIFT = [
     ("Utilities", "SpokenLanguage.swift"),
     ("Utilities", "DemoLines.swift"),
     ("Utilities", "SpeakerSense.swift"),
+    ("Utilities", "TranscriptMerge.swift"),
     ("Views", "RootView.swift"),
     ("Views", "SettingsView.swift"),
     ("Views", "SuperGrokSignInView.swift"),

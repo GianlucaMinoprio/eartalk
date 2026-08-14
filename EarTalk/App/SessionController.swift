@@ -324,43 +324,30 @@ final class SessionController: ObservableObject {
 
     private func monitorListening() async {
         var heardSpeech = false
+        var speechFor: TimeInterval = 0
         var silentFor: TimeInterval = 0
-        var lastRotate = Date()
         let started = Date()
 
         while !Task.isCancelled, isInListenPhase(phase) {
             try? await Task.sleep(nanoseconds: 100_000_000)
 
             capture.updateMeters()
-            if capture.averagePower > -28 {
+            if capture.averagePower > -32 {
                 heardSpeech = true
+                speechFor += 0.1
                 silentFor = 0
             } else if heardSpeech {
                 silentFor += 0.1
             }
 
-            if Date().timeIntervalSince(lastRotate) >= 2.6, isInListenPhase(phase) {
-                lastRotate = Date()
-                await liveTranscribeChunk()
-            }
-
             let elapsed = Date().timeIntervalSince(started)
-            if heardSpeech, silentFor >= 1.5, elapsed >= 1.8 {
-                let lastChunk = capture.stop()
-                pipelineTask = Task { await finishTurn(lastChunk: lastChunk) }
+            // Need real speech, not a button rustle, then a pause.
+            // Do not rotate mid-turn. The last file must still contain the words.
+            if heardSpeech, speechFor >= 0.6, silentFor >= 1.7, elapsed >= 2.2 {
+                let file = capture.stop()
+                pipelineTask = Task { await finishTurn(lastChunk: file) }
                 return
             }
-        }
-    }
-
-    private func sttLanguageHint() -> String? {
-        switch listenMode {
-        case .auto:
-            return nil
-        case .locked(.themToMe):
-            return settings.theirLang.sttCode
-        case .locked(.meToThem):
-            return settings.myLang.sttCode
         }
     }
 
@@ -382,27 +369,6 @@ final class SessionController: ObservableObject {
         }
     }
 
-    private func liveTranscribeChunk() async {
-        guard settings.hasLiveCredential else { return }
-        do {
-            guard let url = try capture.rotate() else { return }
-            defer { try? FileManager.default.removeItem(at: url) }
-            try Task.checkCancellation()
-            let bearer = try await SuperGrokAuth.shared.validAccessToken()
-            let result = try await client.transcribe(
-                fileURL: url,
-                bearer: bearer,
-                language: sttLanguageHint()
-            )
-            appendLive(result.text)
-            if classifiedDirection == nil || listenMode == .auto {
-                applyClassification(text: liveTranscript, detected: result.language)
-            }
-        } catch {
-            // Chunk STT can fail on silence. Keep listening.
-        }
-    }
-
     private func finishTurn(lastChunk: URL? = nil) async {
         // Never run this on listenTask. Canceling that task from here used to
         // mark the translate/TTS work cancelled, then we swallowed it and
@@ -418,19 +384,19 @@ final class SessionController: ObservableObject {
         do {
             let bearer = try await SuperGrokAuth.shared.validAccessToken()
             if let lastChunk {
-                if let result = try? await client.transcribe(
-                    fileURL: lastChunk,
-                    bearer: bearer,
-                    language: sttLanguageHint()
-                ) {
-                    appendLive(result.text)
-                    applyClassification(text: liveTranscript, detected: result.language)
+                let bytes = (try? FileManager.default.attributesOfItem(atPath: lastChunk.path)[.size] as? NSNumber)?.intValue ?? 0
+                if bytes < 2500 {
+                    phase = .error("Mic caught silence. Hold the phone closer and talk a bit longer.")
+                    return
                 }
+                let result = try await transcribeUtterance(fileURL: lastChunk, bearer: bearer)
+                appendLive(result.text)
+                applyClassification(text: liveTranscript, detected: result.language)
             }
 
             let text = liveTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty else {
-                phase = .error("Nothing heard. Try again a bit closer.")
+            guard TranscriptMerge.isUsable(text) else {
+                phase = .error("Nothing heard. Hold the phone closer and talk a bit longer.")
                 return
             }
 
@@ -515,38 +481,49 @@ final class SessionController: ObservableObject {
         }
     }
 
-    private func appendLive(_ piece: String) {
-        let piece = piece.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard piece.count > 2 else { return }
-        if liveTranscript.isEmpty {
-            liveTranscript = piece
-            return
-        }
-        if liveTranscript.localizedCaseInsensitiveContains(piece) { return }
-        if piece.localizedCaseInsensitiveContains(liveTranscript) {
-            liveTranscript = piece
-            return
-        }
-        liveTranscript = stitchTranscript(existing: liveTranscript, incoming: piece)
-    }
+    private func transcribeUtterance(fileURL: URL, bearer: String) async throws -> STTResult {
+        var lastError: Error?
+        var best: STTResult?
 
-    private func stitchTranscript(existing: String, incoming: String) -> String {
-        let existingWords = existing.split(separator: " ").map(String.init)
-        let incomingWords = incoming.split(separator: " ").map(String.init)
-        guard !existingWords.isEmpty, !incomingWords.isEmpty else {
-            return (existing + " " + incoming).trimmingCharacters(in: .whitespaces)
-        }
-        let maxOverlap = min(6, existingWords.count, incomingWords.count)
-        if maxOverlap > 0 {
-            for n in stride(from: maxOverlap, through: 1, by: -1) {
-                let tail = existingWords.suffix(n).map { $0.lowercased() }
-                let head = incomingWords.prefix(n).map { $0.lowercased() }
-                if tail == head {
-                    return (existingWords + incomingWords.dropFirst(n)).joined(separator: " ")
-                }
+        func consider(_ result: STTResult) {
+            let text = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard TranscriptMerge.isUsable(text) else { return }
+            guard let current = best else {
+                best = result
+                return
+            }
+            if text.count > current.text.count {
+                best = result
             }
         }
-        return existing + " " + incoming
+
+        let hints: [String?]
+        switch listenMode {
+        case .auto:
+            hints = [nil, settings.theirLang.sttCode, settings.myLang.sttCode]
+        case .locked(.themToMe):
+            hints = [settings.theirLang.sttCode, nil]
+        case .locked(.meToThem):
+            hints = [settings.myLang.sttCode, nil]
+        }
+
+        for hint in hints {
+            do {
+                let result = try await client.transcribe(fileURL: fileURL, bearer: bearer, language: hint)
+                consider(result)
+                if let best, best.text.count >= 8 { return best }
+            } catch {
+                lastError = error
+            }
+        }
+
+        if let best { return best }
+        if let lastError { throw lastError }
+        throw XAIClientError.emptyTranscript
+    }
+
+    private func appendLive(_ piece: String) {
+        liveTranscript = TranscriptMerge.append(existing: liveTranscript, incoming: piece)
     }
 
     // MARK: - Demo

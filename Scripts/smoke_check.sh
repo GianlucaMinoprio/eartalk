@@ -16,6 +16,7 @@ need=(
   EarTalk/Utilities/SpokenLanguage.swift
   EarTalk/Utilities/DemoLines.swift
   EarTalk/Utilities/SpeakerSense.swift
+  EarTalk/Utilities/TranscriptMerge.swift
   EarTalk/Views/RootView.swift
   EarTalk/Views/SettingsView.swift
   EarTalk/Views/SuperGrokSignInView.swift
