@@ -1,38 +1,44 @@
 import SwiftUI
 
-/// Two-sided board. They speak on the left, I speak on the right.
-/// Owner holds the phone: translation toward you lands on the right,
-/// translation toward them lands on the left. The other side is the original.
+/// Face-to-face board. Top is upside-down for the person across from you.
+/// The one receiving the translation gets 3/5. The original is 2/5 for a check.
 struct CaptionBoardView: View {
     @EnvironmentObject private var session: SessionController
 
+    private var towardMe: Bool {
+        session.captionTurn?.direction != .meToThem
+    }
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 16) {
-                statusRow
-
-                HStack(alignment: .top, spacing: 0) {
-                    column(
-                        title: "They speak",
+            GeometryReader { geo in
+                let height = geo.size.height
+                let topShare: CGFloat = towardMe ? 0.4 : 0.6
+                VStack(spacing: 0) {
+                    pane(
+                        title: towardMe ? "They said" : "They hear",
                         language: SpokenLanguage.named(session.settings.theirLanguage).name,
-                        text: theirSideText,
-                        emphasized: session.captionTurn?.direction == .meToThem
+                        text: topText,
+                        big: !towardMe
                     )
+                    .frame(height: height * topShare)
+                    .rotationEffect(.degrees(180))
 
-                    Divider()
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.12))
+                        .frame(height: 1)
 
-                    column(
-                        title: "I speak",
+                    pane(
+                        title: towardMe ? "You hear" : "You said",
                         language: SpokenLanguage.named(session.settings.myLanguage).name,
-                        text: mySideText,
-                        emphasized: session.captionTurn?.direction == .themToMe
+                        text: bottomText,
+                        big: towardMe
                     )
+                    .frame(height: height * (1 - topShare))
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 12)
-            .navigationTitle("EarTalk")
+            .ignoresSafeArea(edges: .bottom)
+            .navigationTitle(session.isConversationLive ? "Listening" : "EarTalk")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -51,52 +57,32 @@ struct CaptionBoardView: View {
         }
     }
 
-    private var theirSideText: String {
+    private var topText: String {
         guard let turn = session.captionTurn else { return "" }
-        return turn.direction == .themToMe ? turn.sourceText : turn.translatedText
+        return towardMe ? turn.sourceText : turn.translatedText
     }
 
-    private var mySideText: String {
+    private var bottomText: String {
         guard let turn = session.captionTurn else { return "" }
-        return turn.direction == .themToMe ? turn.translatedText : turn.sourceText
+        return towardMe ? turn.translatedText : turn.sourceText
     }
 
-    private var statusRow: some View {
-        HStack {
-            if session.phase.isCapturing || session.isConversationLive {
-                Label("Listening", systemImage: "mic.fill")
-                    .foregroundStyle(Color.red)
-            } else if session.player.isPlaying {
-                Label("Speaking", systemImage: "speaker.wave.2.fill")
-                    .foregroundStyle(Color.accentColor)
-            }
-            Spacer()
-            Text(session.headphonesWorn ? "AirPods in" : "AirPods out")
-                .foregroundStyle(session.headphonesWorn ? Color.secondary : Color.orange)
-        }
-        .font(.footnote.weight(.semibold))
-        .padding(.horizontal, 8)
-        .padding(.top, 4)
-    }
-
-    private func column(title: String, language: String, text: String, emphasized: Bool) -> some View {
-        VStack(spacing: 10) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-            Text(language)
+    private func pane(title: String, language: String, text: String, big: Bool) -> some View {
+        VStack(spacing: 8) {
+            Text("\(title) · \(language)")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
-                .tracking(1.0)
-
+                .tracking(0.6)
             Text(text.isEmpty ? " " : text)
-                .font(.system(size: emphasized ? 36 : 28, weight: .bold))
-                .minimumScaleFactor(0.28)
+                .font(.system(size: big ? 44 : 28, weight: .bold))
+                .minimumScaleFactor(0.22)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                .padding(.horizontal, 6)
+                .padding(.horizontal, 16)
         }
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
