@@ -187,6 +187,7 @@ actor XAIClient {
         request.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        request.timeoutInterval = 20
 
         let (data, response) = try await session.data(for: request)
         try throwIfNeeded(data: data, response: response)

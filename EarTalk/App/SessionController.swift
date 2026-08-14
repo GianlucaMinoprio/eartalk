@@ -311,7 +311,8 @@ final class SessionController: ObservableObject {
 
             let elapsed = Date().timeIntervalSince(started)
             if heardSpeech, silentFor >= 1.5, elapsed >= 1.8 {
-                await finishTurn()
+                let lastChunk = capture.stop()
+                pipelineTask = Task { await finishTurn(lastChunk: lastChunk) }
                 return
             }
         }
@@ -367,9 +368,12 @@ final class SessionController: ObservableObject {
         }
     }
 
-    private func finishTurn() async {
+    private func finishTurn(lastChunk: URL? = nil) async {
+        // Never run this on listenTask. Canceling that task from here used to
+        // mark the translate/TTS work cancelled, then we swallowed it and
+        // stayed on Translating.
         listenTask?.cancel()
-        let lastChunk = capture.stop()
+        listenTask = nil
         defer {
             if let lastChunk {
                 try? FileManager.default.removeItem(at: lastChunk)
@@ -379,7 +383,6 @@ final class SessionController: ObservableObject {
         do {
             let bearer = try await SuperGrokAuth.shared.validAccessToken()
             if let lastChunk {
-                debugLine = "STT…"
                 if let result = try? await client.transcribe(
                     fileURL: lastChunk,
                     bearer: bearer,
@@ -412,7 +415,7 @@ final class SessionController: ObservableObject {
                 from: from,
                 to: to,
                 bearer: bearer,
-                model: settings.chatModel
+                model: "grok-4-1-fast-non-reasoning"
             )
             try Task.checkCancellation()
             liveTranslation = translated
@@ -468,7 +471,9 @@ final class SessionController: ObservableObject {
             }
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         } catch is CancellationError {
-            // ignore
+            if phase == .translatingThem || phase == .translatingMe || phase == .playingEar || phase == .playingSpeaker {
+                phase = .error("Stopped.")
+            }
         } catch {
             guard !Task.isCancelled else { return }
             phase = .error(error.localizedDescription)
