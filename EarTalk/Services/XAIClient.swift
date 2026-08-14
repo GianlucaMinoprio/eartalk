@@ -117,14 +117,16 @@ actor XAIClient {
             body.append("\(value)\r\n".data(using: .utf8)!)
         }
 
-        // Options must precede file per xAI STT docs
-        appendField(name: "format", value: "true")
+        // Options must precede file. Language is formatting only; the model
+        // already transcribes any supported language without it.
         if let language {
             let language = language.trimmingCharacters(in: .whitespacesAndNewlines)
             if !language.isEmpty {
                 appendField(name: "language", value: language)
+                appendField(name: "format", value: "true")
             }
         }
+        request.timeoutInterval = 12
 
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
@@ -155,24 +157,16 @@ actor XAIClient {
         let bearer = bearer.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !bearer.isEmpty else { throw XAIClientError.missingAPIKey }
 
-        let system = """
-        You are a live interpreter sitting between two people.
-        Translate the user's message from \(from.name) (\(from.id)) into \(to.name) (\(to.id)).
-        Return ONLY valid JSON: {"translation":"..."}
-        Rules:
-        - Natural spoken language, not a word-for-word gloss
-        - Keep meaning, politeness, and length close to the original
-        - No quotes around the whole translation
-        - Never use em dashes or unicode dashes. Use a comma, period, or hyphen.
-        - No notes, no romanization unless the target uses a Latin script and the source does not
-        - If the source is already in the target language, return it cleaned up
-        """
+        if from.matches(to.id) || from.id == to.id {
+            return text
+        }
+
+        let system = "Translate from \(from.name) to \(to.name). Reply with the spoken translation only. No quotes, no notes, no romanization."
 
         var payload: [String: Any] = [
             "model": model,
-            "temperature": 0.2,
-            "max_tokens": 400,
-            "response_format": ["type": "json_object"],
+            "temperature": 0.1,
+            "max_tokens": 220,
             "messages": [
                 ["role": "system", "content": system],
                 ["role": "user", "content": text]
@@ -214,8 +208,9 @@ actor XAIClient {
             "output_format": [
                 "codec": "mp3",
                 "sample_rate": 24_000,
-                "bit_rate": 128_000
-            ]
+                "bit_rate": 64_000
+            ],
+            "speed": 1.05
         ]
 
         var request = URLRequest(url: baseURL.appendingPathComponent("tts"))
@@ -223,6 +218,7 @@ actor XAIClient {
         request.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        request.timeoutInterval = 15
 
         let (data, response) = try await session.data(for: request)
         try throwIfNeeded(data: data, response: response, expectJSONErrorOnly: true)
@@ -236,24 +232,28 @@ actor XAIClient {
     // MARK: - Helpers
 
     private func parseTranslation(from content: String) throws -> String {
-        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        let jsonData: Data
-        if let data = trimmed.data(using: .utf8), trimmed.first == "{" {
-            jsonData = data
-        } else if let start = trimmed.firstIndex(of: "{"),
-                  let end = trimmed.lastIndex(of: "}"),
-                  start < end {
-            jsonData = Data(trimmed[start...end].utf8)
-        } else {
-            throw XAIClientError.decodeFailed("no JSON object in model output")
+        var trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("```") {
+            trimmed = trimmed
+                .replacingOccurrences(of: "```json", with: "")
+                .replacingOccurrences(of: "```", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
         }
-
-        do {
-            let payload = try JSONDecoder().decode(TranslationDTO.self, from: jsonData)
-            return payload.translation.trimmingCharacters(in: .whitespacesAndNewlines)
-        } catch {
-            throw XAIClientError.decodeFailed(error.localizedDescription)
+        if trimmed.first == "{",
+           let start = trimmed.firstIndex(of: "{"),
+           let end = trimmed.lastIndex(of: "}"),
+           start < end,
+           let payload = try? JSONDecoder().decode(
+            TranslationDTO.self,
+            from: Data(trimmed[start...end].utf8)
+           ) {
+            trimmed = payload.translation.trimmingCharacters(in: .whitespacesAndNewlines)
         }
+        if (trimmed.hasPrefix("\"") && trimmed.hasSuffix("\""))
+            || (trimmed.hasPrefix("'") && trimmed.hasSuffix("'")) {
+            trimmed = String(trimmed.dropFirst().dropLast())
+        }
+        return trimmed.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func throwIfNeeded(data: Data, response: URLResponse, expectJSONErrorOnly: Bool = false) throws {

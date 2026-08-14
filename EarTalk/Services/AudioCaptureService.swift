@@ -60,9 +60,10 @@ final class AudioCaptureService: ObservableObject {
         fileURL = url
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 44_100,
+            AVSampleRateKey: 16_000,
             AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+            AVEncoderBitRateKey: 32_000,
+            AVEncoderAudioQualityKey: AVAudioQuality.medium.rawValue
         ]
         let recorder = try AVAudioRecorder(url: url, settings: settings)
         recorder.isMeteringEnabled = true

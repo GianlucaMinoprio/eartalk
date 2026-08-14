@@ -81,6 +81,11 @@ struct CaptionBoardView: View {
                 .lineSpacing(2)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .padding(.horizontal, 16)
+                .overlay {
+                    if text.isEmpty {
+                        ProgressView()
+                    }
+                }
         }
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

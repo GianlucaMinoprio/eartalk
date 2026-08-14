@@ -357,7 +357,7 @@ final class SessionController: ObservableObject {
             }
 
             let elapsed = Date().timeIntervalSince(started)
-            if heardSpeech, speechFor >= 0.6, silentFor >= 1.7, elapsed >= 2.2 {
+            if heardSpeech, speechFor >= 0.5, silentFor >= 1.0, elapsed >= 1.5 {
                 let file = (try? capture.rotate()) ?? capture.stop()
                 if !capture.isRecording {
                     let mic: CaptureMic = {
@@ -436,6 +436,19 @@ final class SessionController: ObservableObject {
 
             let from = direction == .themToMe ? settings.theirLang : settings.myLang
             let to = direction == .themToMe ? settings.myLang : settings.theirLang
+            let turnID = UUID()
+            presentCaption(
+                ConversationTurn(
+                    id: turnID,
+                    direction: direction,
+                    sourceText: text,
+                    translatedText: "",
+                    sourceLanguage: from.id,
+                    targetLanguage: to.id
+                ),
+                hold: true
+            )
+
             let translated = try await client.translate(
                 text: text,
                 from: from,
@@ -447,16 +460,17 @@ final class SessionController: ObservableObject {
             liveTranslation = translated
 
             let turn = ConversationTurn(
+                id: turnID,
                 direction: direction,
                 sourceText: text,
                 translatedText: translated,
                 sourceLanguage: from.id,
                 targetLanguage: to.id
             )
+            captionTurn = turn
+            history.removeAll { $0.id == turnID }
             history.insert(turn, at: 0)
             if history.count > 30 { history = Array(history.prefix(30)) }
-
-            presentCaption(turn, hold: true)
 
             let audio = try await client.synthesize(
                 text: translated,
@@ -488,44 +502,18 @@ final class SessionController: ObservableObject {
 
 
     private func transcribeUtterance(fileURL: URL, bearer: String) async throws -> STTResult {
-        var lastError: Error?
-        var best: STTResult?
-
-        func consider(_ result: STTResult) {
-            let text = result.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard TranscriptMerge.isUsable(text) else { return }
-            guard let current = best else {
-                best = result
-                return
-            }
-            if text.count > current.text.count {
-                best = result
-            }
-        }
-
-        let hints: [String?]
+        // One STT call. Language is formatting, not the detector. Extra
+        // retries used to add a full second of "nothing happened".
+        let hint: String?
         switch listenMode {
         case .auto:
-            hints = [nil, settings.theirLang.sttCode, settings.myLang.sttCode]
+            hint = nil
         case .locked(.themToMe):
-            hints = [settings.theirLang.sttCode, nil]
+            hint = settings.theirLang.sttCode
         case .locked(.meToThem):
-            hints = [settings.myLang.sttCode, nil]
+            hint = settings.myLang.sttCode
         }
-
-        for hint in hints {
-            do {
-                let result = try await client.transcribe(fileURL: fileURL, bearer: bearer, language: hint)
-                consider(result)
-                if let best, best.text.count >= 8 { return best }
-            } catch {
-                lastError = error
-            }
-        }
-
-        if let best { return best }
-        if let lastError { throw lastError }
-        throw XAIClientError.emptyTranscript
+        return try await client.transcribe(fileURL: fileURL, bearer: bearer, language: hint)
     }
 
     private func appendLive(_ piece: String) {
