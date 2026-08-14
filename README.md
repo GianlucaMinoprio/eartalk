@@ -1,11 +1,11 @@
 # EarTalk
 
-Live translator in your AirPods. Sister app to [NodVoice](https://github.com/GianlucaMinoprio/nodvoice).
+Live translator in your earbuds. Sister app to [NodVoice](https://github.com/GianlucaMinoprio/nodvoice).
 
 You pick the language they speak and the language you want to hear. Grok transcribes, translates, and talks.
 
 1. **Listen** - one mic. Grok STT detects the language.
-   - Their language → Eve in your ear (speaker if AirPods are out) + big text in your language.
+   - Their language → Eve in your ear (speaker if no earbuds) + big text in your language.
    - Your language → Eve out loud + big text in their language.
 
 No API key. Sign in with SuperGrok.
@@ -14,7 +14,7 @@ No API key. Sign in with SuperGrok.
 
 - Mac with Xcode 16+
 - iPhone on iOS 17+
-- AirPods (or any Bluetooth buds) for the in-ear half
+- Any earbuds or headset (AirPods, Beats, Sony, wired, USB-C) for the in-ear half. Optional.
 - [xAI](https://console.x.ai/) SuperGrok / X Premium+. Sign in in Settings.
 
 Simulator runs the full UI and demo loop. Real STT / TTS needs SuperGrok on a device.
@@ -30,7 +30,7 @@ open EarTalk.xcodeproj
 1. Select your Team under Signing and Capabilities
 2. Build to your iPhone
 3. Open the app, Settings, Sign in with SuperGrok
-4. Put AirPods in, grant mic permission
+4. Connect any earbuds if you want it in-ear, grant mic permission
 5. Set **They speak** / **I speak**
 6. Tap **Listen**. Pause after either of you talks. Language picks the side.
 
@@ -39,7 +39,7 @@ open EarTalk.xcodeproj
 ```
 They talk  ->  phone mic  ->  Grok STT
            ->  matches They speak
-           ->  Grok TTS in your language  ->  AirPods (or speaker)
+           ->  Grok TTS in your language  ->  earbuds (or speaker)
            ->  big text in your language
 
 You talk   ->  phone mic  ->  Grok STT
@@ -50,7 +50,7 @@ You talk   ->  phone mic  ->  Grok STT
 
 Silence of about 1.5s ends a turn. Their side auto-continues after the ear playback. Your side keeps the caption until Done, then Listen again.
 
-AirPods are optional. Out = no Bluetooth, your side plays on the speaker. Mic is always the phone when they talk.
+Earbuds are optional. Out = no Bluetooth, your side plays on the speaker. Mic is always the phone when they talk.
 
 ## Architecture
 
@@ -62,7 +62,7 @@ EarTalk/
     AudioCaptureService.swift   AVAudioRecorder (m4a) + route
     SuperGrokAuth.swift         Device-code SuperGrok OAuth + Keychain
     XAIClient.swift             STT + translate + TTS
-    SpeechPlayer.swift          AirPods vs speaker
+    SpeechPlayer.swift          earbuds vs speaker
   Views/               Languages, live turn, caption board, Settings
 ```
 

@@ -2,9 +2,9 @@ import AVFoundation
 import Foundation
 
 enum CaptureMic {
-    /// Point the phone at them. Never use AirPods mic here.
+    /// Point the phone at them. Never use the headset mic here.
     case them
-    /// You are speaking. AirPods mic is fine if present.
+    /// You are speaking. Headset mic is fine if present.
     case me
 }
 
@@ -112,23 +112,34 @@ enum AudioScene {
 }
 
 enum Headphones {
-    /// True only when buds are actually on the current route or offered as an input.
-    /// In the case they disappear. Do not IMU-gate EarTalk on this.
+    /// Any connected earpiece: AirPods, Beats, Sony, wired, USB-C, car headset.
+    /// Do not IMU-gate EarTalk on this.
     static func areWorn() -> Bool {
+        !connectedPorts().isEmpty
+    }
+
+    static var displayName: String {
+        let ports = connectedPorts()
+        if let named = ports.first(where: { !$0.portName.trimmingCharacters(in: .whitespaces).isEmpty }) {
+            return named.portName
+        }
+        return areWorn() ? "Earbuds" : "Speaker"
+    }
+
+    private static func budPorts() -> Set<AVAudioSession.Port> {
+        [.bluetoothA2DP, .bluetoothHFP, .bluetoothLE, .headphones, .headsetMic, .usbAudio]
+    }
+
+    private static func connectedPorts() -> [AVAudioSessionPortDescription] {
         let session = AVAudioSession.sharedInstance()
-        let budPorts: Set<AVAudioSession.Port> = [
-            .bluetoothA2DP, .bluetoothHFP, .bluetoothLE, .headphones, .headsetMic
-        ]
-        if session.currentRoute.outputs.contains(where: { budPorts.contains($0.portType) }) {
-            return true
+        let types = budPorts()
+        var found: [AVAudioSessionPortDescription] = []
+        found.append(contentsOf: session.currentRoute.outputs.filter { types.contains($0.portType) })
+        found.append(contentsOf: session.currentRoute.inputs.filter { types.contains($0.portType) })
+        if found.isEmpty, let extras = session.availableInputs?.filter({ types.contains($0.portType) }) {
+            found.append(contentsOf: extras)
         }
-        if session.currentRoute.inputs.contains(where: { budPorts.contains($0.portType) }) {
-            return true
-        }
-        if session.availableInputs?.contains(where: { budPorts.contains($0.portType) }) == true {
-            return true
-        }
-        return false
+        return found
     }
 }
 
@@ -142,7 +153,7 @@ enum AudioRouter {
 
         switch scene {
         case .listenThem:
-            // Built-in mic hears them. Never the AirPods mic.
+            // Built-in mic hears them. Never the headset mic.
             var options: AVAudioSession.CategoryOptions = []
             if buds {
                 options.insert(.allowBluetoothA2DP)

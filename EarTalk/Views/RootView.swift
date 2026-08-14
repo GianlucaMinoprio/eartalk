@@ -109,9 +109,10 @@ struct RootView: View {
                 }
             }
 
-            LabeledContent("AirPods") {
-                Text(session.headphonesWorn ? "In" : "Out")
+            LabeledContent("Earbuds") {
+                Text(session.headphonesWorn ? session.headphonesName : "Out")
                     .foregroundStyle(session.headphonesWorn ? Color.secondary : Color.orange)
+                    .lineLimit(1)
             }
         } header: {
             Text("Session")

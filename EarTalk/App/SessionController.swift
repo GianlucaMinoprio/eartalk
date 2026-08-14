@@ -16,6 +16,7 @@ final class SessionController: ObservableObject {
     @Published var whoLabel: String = ""
     @Published var grokSignedIn = SuperGrokSession.isSignedIn
     @Published var headphonesWorn = Headphones.areWorn()
+    @Published var headphonesName = Headphones.displayName
     @Published var captionHolds = false
 
     let capture = AudioCaptureService()
@@ -113,6 +114,7 @@ final class SessionController: ObservableObject {
 
     func refreshHeadphones() {
         headphonesWorn = Headphones.areWorn()
+        headphonesName = Headphones.displayName
     }
 
     func refreshGrokAuth() {

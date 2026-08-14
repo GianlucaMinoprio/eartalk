@@ -82,8 +82,8 @@ struct SettingsView: View {
                 } footer: {
                     Text(signedIn
                          ? (Headphones.areWorn()
-                            ? "Tap play to hear a sample in your AirPods."
-                            : "AirPods are out. Preview plays on the speaker.")
+                            ? "Tap play to hear a sample in your earbuds."
+                            : "No earbuds connected. Preview plays on the speaker.")
                          : "Sign in to preview voices.")
                 }
 
