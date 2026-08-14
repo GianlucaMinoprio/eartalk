@@ -4,7 +4,6 @@ struct SettingsView: View {
     @EnvironmentObject private var session: SessionController
     @Environment(\.dismiss) private var dismiss
 
-    @State private var chatModel: String = AppSettings.defaultChatModel
     @State private var earVoiceID: String = AppSettings.defaultEarVoice
     @State private var speakerVoiceID: String = AppSettings.defaultSpeakerVoice
     @State private var myLanguage: String = AppSettings.defaultMyLanguage
@@ -14,14 +13,11 @@ struct SettingsView: View {
     @State private var showSuperGrok = false
     @State private var signedIn = SuperGrokSession.isSignedIn
     @State private var accountHint = SuperGrokSession.load()?.accountHint
-
-    private let modelChoices = [
-        "grok-4.5",
-        "grok-4-1-fast-non-reasoning",
-        "grok-4.6"
-    ]
+    @State private var previewing: String?
+    @State private var previewError: String?
 
     private let voiceChoices = ["eve", "ara", "rex", "sal", "leo", "ursa"]
+    private let client = XAIClient()
 
     var body: some View {
         NavigationStack {
@@ -65,85 +61,52 @@ struct SettingsView: View {
                             Text(item.name).tag(item.id)
                         }
                     }
-                    Picker("I hear / I speak", selection: $myLanguage) {
+                    Picker("I hear", selection: $myLanguage) {
                         ForEach(SpokenLanguage.catalog) { item in
                             Text(item.name).tag(item.id)
                         }
                     }
                 } header: {
                     Text("Languages")
-                } footer: {
-                    Text("Pre-select what you expect them to speak, and the language you want in your ear.")
                 }
 
                 Section {
-                    Picker("Chat", selection: $chatModel) {
-                        ForEach(modelChoices, id: \.self) { model in
-                            Text(model).tag(model)
-                        }
+                    voiceRows(selection: $earVoiceID, route: .earbuds)
+                    if let previewError {
+                        Text(previewError)
+                            .font(.footnote)
+                            .foregroundStyle(.orange)
                     }
-                    if !modelChoices.contains(chatModel) {
-                        TextField("Custom model id", text: $chatModel)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .font(.body.monospaced())
-                    }
+                } header: {
+                    Text("Ear voice")
+                } footer: {
+                    Text(signedIn ? "Tap play to hear a sample in your AirPods." : "Sign in to preview voices.")
+                }
 
-                    Picker("Voice in my ear", selection: $earVoiceID) {
-                        ForEach(voiceChoices, id: \.self) { voice in
-                            Text(voice).tag(voice)
-                        }
-                    }
-                    Picker("Voice out loud", selection: $speakerVoiceID) {
-                        ForEach(voiceChoices, id: \.self) { voice in
-                            Text(voice).tag(voice)
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Ear volume \(Int(earVolume * 100))%")
-                        Slider(value: $earVolume, in: 0.2...1, step: 0.05)
-                    }
+                Section {
+                    voiceRows(selection: $speakerVoiceID, route: .speaker)
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Speaker \(Int(speakerVolume * 100))%")
                         Slider(value: $speakerVolume, in: 0.2...1, step: 0.05)
                     }
                 } header: {
-                    Text("Model")
+                    Text("Speaker")
                 } footer: {
-                    Text("Eve in your AirPods. Speaker plays their language so they can hear you too.")
+                    Text("This is what they hear when you talk.")
                 }
 
                 Section {
                     LabeledContent("Listen") {
-                        Text("Guesses them vs you from language")
+                        Text("Guesses them vs you")
                             .foregroundStyle(.secondary)
                     }
-                    LabeledContent("Force: they talk") {
-                        Text("Phone mic, translation in AirPods")
+                    LabeledContent("Force") {
+                        Text("They talk or I talk")
                             .foregroundStyle(.secondary)
                     }
-                    LabeledContent("Force: I talk") {
-                        Text("Your words out loud + big text")
-                            .foregroundStyle(.secondary)
-                    }
-                    LabeledContent("Silence") {
-                        Text("Ends the turn")
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Text("How it works")
-                } footer: {
-                    Text("Listen leaves language unlocked so Grok can tell German from English. Point the phone at them when they talk.")
-                }
-
-                Section {
                     LabeledContent("App") {
                         Text("EarTalk 1.0")
                             .foregroundStyle(.secondary)
-                    }
-                    Link(destination: URL(string: "https://docs.x.ai/developers/model-capabilities/audio/voice")!) {
-                        Label("xAI voice docs", systemImage: "link")
                     }
                 } header: {
                     Text("About")
@@ -161,6 +124,7 @@ struct SettingsView: View {
                 }
             }
             .onAppear(perform: load)
+            .onDisappear { session.player.stop() }
             .sheet(isPresented: $showSuperGrok, onDismiss: refreshAuth) {
                 SuperGrokSignInView {
                     refreshAuth()
@@ -169,8 +133,42 @@ struct SettingsView: View {
         }
     }
 
+    @ViewBuilder
+    private func voiceRows(selection: Binding<String>, route: AudioRoute) -> some View {
+        ForEach(voiceChoices, id: \.self) { voice in
+            HStack {
+                Button {
+                    selection.wrappedValue = voice
+                } label: {
+                    Label(voice.capitalized, systemImage: selection.wrappedValue == voice ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(selection.wrappedValue == voice ? Color.accentColor : Color.primary)
+                }
+                .buttonStyle(.plain)
+                Spacer()
+                Button {
+                    preview(voice, route: route, language: route == .earbuds ? myLanguage : theirLanguage)
+                } label: {
+                    if previewing == "\(routeLabel(route))-\(voice)" {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "play.circle.fill")
+                            .font(.title3)
+                    }
+                }
+                .disabled(!signedIn || previewing != nil)
+                .accessibilityLabel("Preview \(voice)")
+            }
+        }
+    }
+
+    private func routeLabel(_ route: AudioRoute) -> String {
+        switch route {
+        case .earbuds: return "ear"
+        case .speaker: return "speak"
+        }
+    }
+
     private func load() {
-        chatModel = session.settings.chatModel
         earVoiceID = session.settings.earVoiceID
         speakerVoiceID = session.settings.speakerVoiceID
         myLanguage = session.settings.myLanguage
@@ -183,10 +181,11 @@ struct SettingsView: View {
     private func refreshAuth() {
         signedIn = SuperGrokSession.isSignedIn
         accountHint = SuperGrokSession.load()?.accountHint
+        session.refreshGrokAuth()
     }
 
     private func save() {
-        session.settings.chatModel = nonempty(chatModel, default: AppSettings.defaultChatModel)
+        session.settings.chatModel = AppSettings.defaultChatModel
         session.settings.earVoiceID = nonempty(earVoiceID, default: AppSettings.defaultEarVoice)
         session.settings.speakerVoiceID = nonempty(speakerVoiceID, default: AppSettings.defaultSpeakerVoice)
         session.settings.myLanguage = nonempty(myLanguage, default: AppSettings.defaultMyLanguage)
@@ -195,6 +194,30 @@ struct SettingsView: View {
         session.settings.speakerVolume = speakerVolume
         session.saveSettings()
         dismiss()
+    }
+
+    private func preview(_ voice: String, route: AudioRoute, language: String) {
+        previewError = nil
+        previewing = "\(routeLabel(route))-\(voice)"
+        Task {
+            defer { previewing = nil }
+            do {
+                let bearer = try await SuperGrokAuth.shared.validAccessToken()
+                let line = route == .earbuds
+                    ? "This is what you will hear in your ear."
+                    : "This is what they will hear out loud."
+                let audio = try await client.synthesize(
+                    text: line,
+                    bearer: bearer,
+                    voiceID: voice,
+                    language: nonempty(language, default: AppSettings.defaultMyLanguage)
+                )
+                let volume = route == .earbuds ? Float(earVolume) : Float(speakerVolume)
+                try await session.player.play(data: audio, route: route, volume: volume)
+            } catch {
+                previewError = error.localizedDescription
+            }
+        }
     }
 
     private func nonempty(_ value: String, default defaultValue: String) -> String {

@@ -19,13 +19,13 @@ enum SessionPhase: Equatable {
         case .idle: return "Ready"
         case .listening: return "Listening"
         case .hearingThem: return "Hearing them"
-        case .transcribingThem: return "Transcribing them"
-        case .translatingThem: return "Translating to you"
+        case .transcribingThem: return "Hearing them"
+        case .translatingThem: return "Translating"
         case .playingEar: return "In your ear"
         case .hearingMe: return "Hearing you"
-        case .transcribingMe: return "Transcribing you"
-        case .translatingMe: return "Translating out"
-        case .playingSpeaker: return "Speaking out"
+        case .transcribingMe: return "Hearing you"
+        case .translatingMe: return "Translating"
+        case .playingSpeaker: return "Show them"
         case .error: return "Error"
         }
     }

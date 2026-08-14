@@ -13,6 +13,7 @@ final class SessionController: ObservableObject {
     @Published var showCaptionBoard = false
     @Published var captionTurn: ConversationTurn?
     @Published var whoLabel: String = ""
+    @Published var grokSignedIn = SuperGrokSession.isSignedIn
 
     let capture = AudioCaptureService()
     let player = SpeechPlayer()
@@ -36,6 +37,38 @@ final class SessionController: ObservableObject {
         settings = AppSettings.load()
     }
 
+    enum Gate: Equatable {
+        case connectGrok
+        case ready
+    }
+
+    var gate: Gate {
+        grokSignedIn ? .ready : .connectGrok
+    }
+
+    var statusTitle: String {
+        switch gate {
+        case .connectGrok:
+            return "Connect Grok"
+        case .ready:
+            return phase == .idle ? "Ready" : phase.shortLabel
+        }
+    }
+
+    var statusSymbol: String {
+        switch gate {
+        case .connectGrok: return "person.crop.circle.badge.plus"
+        case .ready: return phase.symbolName
+        }
+    }
+
+    var statusTint: Color {
+        switch gate {
+        case .connectGrok: return .accentColor
+        case .ready: return phase == .idle ? .green : phase.tint
+        }
+    }
+
     var isBusy: Bool { phase.isBusy }
     var isSimulator: Bool { DeviceEnvironment.isSimulator }
 
@@ -46,6 +79,23 @@ final class SessionController: ObservableObject {
         default:
             return true
         }
+    }
+
+    var isLiveTurn: Bool {
+        switch phase {
+        case .idle, .error:
+            return false
+        default:
+            return true
+        }
+    }
+
+    func onAppear() {
+        refreshGrokAuth()
+    }
+
+    func refreshGrokAuth() {
+        grokSignedIn = SuperGrokSession.isSignedIn
     }
 
     func saveSettings() {
@@ -70,7 +120,7 @@ final class SessionController: ObservableObject {
         keepListening = true
         listenMode = .locked(.themToMe)
         classifiedDirection = .themToMe
-        whoLabel = "Locked on them"
+        whoLabel = "Them"
         beginCapture()
     }
 
@@ -78,7 +128,7 @@ final class SessionController: ObservableObject {
         keepListening = false
         listenMode = .locked(.meToThem)
         classifiedDirection = .meToThem
-        whoLabel = "Locked on you"
+        whoLabel = "You"
         beginCapture()
     }
 
@@ -89,7 +139,7 @@ final class SessionController: ObservableObject {
         _ = capture.stop()
         player.stop()
         phase = .idle
-        debugLine = "Stopped"
+        debugLine = ""
         liveTranscript = ""
         liveTranslation = ""
         whoLabel = ""
@@ -291,7 +341,7 @@ final class SessionController: ObservableObject {
                 their: settings.theirLang
             )
             classifiedDirection = result.0
-            whoLabel = result.1
+            whoLabel = result.0 == .themToMe ? "Them" : "You"
             applyListeningPhase()
         }
     }
@@ -475,8 +525,8 @@ final class SessionController: ObservableObject {
 
         if direction == .themToMe {
             phase = .hearingThem
-            whoLabel = "Sounds like \(settings.theirLang.name). That's them."
-            debugLine = "Demo. Pretending they spoke \(settings.theirLang.name)."
+            whoLabel = "Them"
+            debugLine = ""
             liveTranscript = DemoLines.themSaid(settings.theirLang)
             try? await Task.sleep(nanoseconds: 900_000_000)
             guard !Task.isCancelled else { return }
@@ -500,8 +550,8 @@ final class SessionController: ObservableObject {
             debugLine = "Tap Listen again for the other side"
         } else {
             phase = .hearingMe
-            whoLabel = "Sounds like \(settings.myLang.name). That's you."
-            debugLine = "Demo. Pretending you spoke \(settings.myLang.name)."
+            whoLabel = "You"
+            debugLine = ""
             liveTranscript = DemoLines.meSaid(settings.myLang)
             try? await Task.sleep(nanoseconds: 900_000_000)
             guard !Task.isCancelled else { return }

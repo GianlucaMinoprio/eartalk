@@ -1,22 +1,26 @@
 import SwiftUI
 
-/// Main screen: pick languages, hear them in your ear, speak back with big text.
+/// Native iOS. Status first. Languages. One Listen. Caption is the product.
 struct RootView: View {
     @EnvironmentObject private var session: SessionController
     @State private var showSettings = false
+    @State private var showSuperGrok = false
 
     var body: some View {
         NavigationStack {
             List {
-                languagesSection
-                actionsSection
                 statusSection
+                if !session.isLiveTurn {
+                    languagesSection
+                }
                 nowSection
-                historySection
+                if !session.isLiveTurn {
+                    historySection
+                }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("EarTalk")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle(session.phase == .playingSpeaker ? "Show them" : "EarTalk")
+            .navigationBarTitleDisplayMode(session.isLiveTurn ? .inline : .large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -35,31 +39,48 @@ struct RootView: View {
 
                     Spacer()
 
-                    Button {
-                        session.startListening()
+                    Menu {
+                        Button("They talk", systemImage: "ear") {
+                            session.startHearingThem()
+                        }
+                        Button("I talk", systemImage: "mic") {
+                            session.startHearingMe()
+                        }
                     } label: {
+                        Label("Force", systemImage: "hand.point.up.left")
+                    }
+                    .disabled(session.isBusy && !session.phase.isCapturing)
+
+                    Button {
                         if session.phase.isCapturing {
-                            Label("Listening…", systemImage: "waveform")
+                            session.stopSession()
                         } else {
-                            Label("Listen", systemImage: "waveform.circle.fill")
+                            session.startListening()
+                        }
+                    } label: {
+                        if session.isBusy && !session.phase.isCapturing {
+                            ProgressView()
+                        } else {
+                            Label(
+                                session.phase.isCapturing ? "Stop" : "Listen",
+                                systemImage: session.phase.isCapturing ? "stop.circle.fill" : "mic.circle.fill"
+                            )
                         }
                     }
                     .disabled(session.isBusy && !session.phase.isCapturing)
                     .tint(session.phase.isCapturing ? .red : .accentColor)
-
-                    Button {
-                        session.startHearingMe()
-                    } label: {
-                        Label("I talk", systemImage: "mic.circle.fill")
-                    }
-                    .disabled(session.isBusy && session.phase != .hearingMe)
-                    .buttonStyle(.borderedProminent)
                 }
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView()
                     .environmentObject(session)
                     .presentationDetents([.medium, .large])
+            }
+            .sheet(isPresented: $showSuperGrok) {
+                SuperGrokSignInView {
+                    session.refreshGrokAuth()
+                    showSuperGrok = false
+                }
             }
             .fullScreenCover(isPresented: $session.showCaptionBoard) {
                 if let turn = session.captionTurn {
@@ -68,10 +89,64 @@ struct RootView: View {
                     }
                 }
             }
+            .onAppear { session.onAppear() }
         }
     }
 
-    // MARK: - Sections
+    private var statusSection: some View {
+        Section {
+            Button {
+                if session.gate == .connectGrok { showSuperGrok = true }
+            } label: {
+                LabeledContent {
+                    Text(session.statusTitle)
+                        .foregroundStyle(session.statusTint)
+                        .fontWeight(.semibold)
+                } label: {
+                    Label("Status", systemImage: session.statusSymbol)
+                }
+            }
+            .buttonStyle(.plain)
+            .disabled(session.gate != .connectGrok)
+
+            if let errorMessage = session.phase.errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.orange)
+            }
+
+            if !session.whoLabel.isEmpty, session.isLiveTurn {
+                LabeledContent("Who") {
+                    Text(session.whoLabel)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } header: {
+            Text("Session")
+        } footer: {
+            Text(footerCopy)
+        }
+    }
+
+    private var footerCopy: String {
+        switch session.gate {
+        case .connectGrok:
+            return "Sign in with SuperGrok first. Listen still runs a demo."
+        case .ready:
+            switch session.phase {
+            case .listening, .hearingThem:
+                return "Point the phone at them. Pause and it lands in your ear."
+            case .hearingMe:
+                return "Talk. Pause, then they hear it and see the text."
+            case .playingEar:
+                return "Translation is in your AirPods."
+            case .playingSpeaker:
+                return "Hold the screen toward them."
+            default:
+                return "Listen. I guess who spoke from the language."
+            }
+        }
+    }
 
     private var languagesSection: some View {
         Section {
@@ -96,151 +171,33 @@ struct RootView: View {
             Button {
                 session.swapLanguages()
             } label: {
-                Label("Swap languages", systemImage: "arrow.up.arrow.down")
+                Label("Swap", systemImage: "arrow.up.arrow.down")
             }
             .disabled(session.phase.isCapturing || session.isBusy)
         } header: {
             Text("Languages")
-        } footer: {
-            Text("They speak \(SpokenLanguage.named(session.settings.theirLanguage).name), you hear \(SpokenLanguage.named(session.settings.myLanguage).name).")
         }
     }
 
-    private var actionsSection: some View {
-        Section {
-            Button {
-                session.startListening()
-            } label: {
-                Label(
-                    session.phase == .listening ? "Listening…" : "Listen",
-                    systemImage: session.phase == .listening ? "waveform.badge.mic" : "waveform.circle.fill"
-                )
-            }
-            .disabled(session.isBusy && !session.phase.isCapturing)
-            .fontWeight(.semibold)
-            .foregroundStyle(session.phase == .listening ? Color.red : Color.accentColor)
-
-            Button {
-                session.startHearingThem()
-            } label: {
-                Label(
-                    session.phase == .hearingThem ? "Hearing them…" : "Force: they talk",
-                    systemImage: session.phase == .hearingThem ? "ear.fill" : "ear"
-                )
-            }
-            .disabled(session.isBusy && session.phase != .hearingThem)
-            .foregroundStyle(session.phase == .hearingThem ? Color.red : Color.primary)
-
-            Button {
-                session.startHearingMe()
-            } label: {
-                Label(
-                    session.phase == .hearingMe ? "Listening to you…" : "Force: I talk",
-                    systemImage: session.phase == .hearingMe ? "mic.fill" : "mic"
-                )
-            }
-            .disabled(session.isBusy && session.phase != .hearingMe)
-
-            if session.showsStop {
-                Button("Stop", role: .destructive) {
-                    session.stopSession()
-                }
-            }
-        } header: {
-            Text("Talk")
-        } footer: {
-            Text("Listen guesses who spoke from the language. Force only if it gets it wrong.")
-        }
-    }
-
-    private var statusSection: some View {
-        Section {
-            LabeledContent {
-                Text(session.phase.shortLabel)
-                    .foregroundStyle(session.phase.tint)
-                    .fontWeight(.semibold)
-            } label: {
-                Label("Status", systemImage: session.phase.symbolName)
-            }
-
-            if let errorMessage = session.phase.errorMessage {
-                Text(errorMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
-            }
-
-            if !session.whoLabel.isEmpty {
-                Text(session.whoLabel)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            if !session.debugLine.isEmpty {
-                Text(session.debugLine)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            if !SuperGrokSession.isSignedIn {
-                Label("Demo mode. Sign in with SuperGrok in Settings.", systemImage: "info.circle")
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
-            }
-        } header: {
-            Text("Session")
-        } footer: {
-            Text(footerCopy)
-        }
-    }
-
-    private var footerCopy: String {
-        switch session.phase {
-        case .listening:
-            return "One mic. I decide from the language they picked vs yours."
-        case .hearingThem:
-            return "Point the phone at them. Pause and it lands in your ear."
-        case .hearingMe:
-            return "Talk. When you pause, they hear it and see the big text."
-        case .playingSpeaker:
-            return "Hold the screen toward them."
-        default:
-            return "Listen for both of you. Force only if the guess is wrong."
-        }
-    }
-
+    @ViewBuilder
     private var nowSection: some View {
-        Section {
-            if session.liveTranscript.isEmpty && session.liveTranslation.isEmpty {
-                ContentUnavailableView(
-                    "Nothing yet",
-                    systemImage: "globe",
-                    description: Text("Tap Listen. I hear both of you and pick a side from the language.")
-                )
-                .listRowBackground(Color.clear)
-            } else {
-                if !session.liveTranscript.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Heard")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(session.liveTranscript)
-                            .font(.body)
-                            .textSelection(.enabled)
-                    }
-                }
+        if !session.liveTranslation.isEmpty || !session.liveTranscript.isEmpty {
+            Section {
                 if !session.liveTranslation.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Translation")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(session.liveTranslation)
-                            .font(.title3.weight(.semibold))
-                            .textSelection(.enabled)
-                    }
+                    Text(session.liveTranslation)
+                        .font(.title3.weight(.semibold))
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                if !session.liveTranscript.isEmpty {
+                    Text(session.liveTranscript)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            } header: {
+                Text(session.whoLabel.isEmpty ? "Now" : session.whoLabel)
             }
-        } header: {
-            Text("Now")
         }
     }
 
@@ -248,7 +205,7 @@ struct RootView: View {
     private var historySection: some View {
         if !session.history.isEmpty {
             Section {
-                ForEach(session.history.prefix(8)) { turn in
+                ForEach(session.history.prefix(5)) { turn in
                     Button {
                         if turn.direction == .meToThem {
                             session.captionTurn = turn
@@ -256,20 +213,14 @@ struct RootView: View {
                         }
                     } label: {
                         VStack(alignment: .leading, spacing: 6) {
-                            Label(
-                                turn.direction == .themToMe ? "Them → you" : "You → them",
-                                systemImage: turn.direction == .themToMe ? "ear" : "person.wave.2"
-                            )
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            Text(turn.sourceText)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(3)
                             Text(turn.translatedText)
                                 .font(.subheadline.weight(.medium))
                                 .foregroundStyle(.primary)
-                                .lineLimit(4)
+                                .lineLimit(3)
+                            Text(turn.sourceText)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
                         }
                         .padding(.vertical, 2)
                     }
@@ -278,7 +229,7 @@ struct RootView: View {
             } header: {
                 Text("Recent")
             } footer: {
-                Text("Tap a line you said to show the big text again.")
+                Text("Tap a line you said to show it big again.")
             }
         }
     }
