@@ -73,11 +73,8 @@ struct RootView: View {
                 }
             }
             .fullScreenCover(isPresented: $session.showCaptionBoard) {
-                if let turn = session.captionTurn {
-                    CaptionBoardView(turn: turn) {
-                        session.dismissCaption()
-                    }
-                }
+                CaptionBoardView()
+                    .environmentObject(session)
             }
             .onAppear { session.onAppear() }
         }

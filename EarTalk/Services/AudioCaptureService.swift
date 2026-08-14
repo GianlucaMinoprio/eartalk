@@ -132,10 +132,12 @@ enum Headphones {
 }
 
 enum AudioRouter {
-    static func configure(for scene: AudioScene) throws {
+    static func configure(for scene: AudioScene, deactivateFirst: Bool = true) throws {
         let session = AVAudioSession.sharedInstance()
         let buds = Headphones.areWorn()
-        try? session.setActive(false, options: .notifyOthersOnDeactivation)
+        if deactivateFirst {
+            try? session.setActive(false, options: .notifyOthersOnDeactivation)
+        }
 
         switch scene {
         case .listenThem:
@@ -197,7 +199,7 @@ enum AudioRouter {
         case .playSpeaker:
             try session.setCategory(
                 .playAndRecord,
-                mode: .default,
+                mode: .voiceChat,
                 options: [.defaultToSpeaker]
             )
             try session.setActive(true, options: .notifyOthersOnDeactivation)

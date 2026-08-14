@@ -74,6 +74,7 @@ final class SessionController: ObservableObject {
     }
 
     var isBusy: Bool { phase.isBusy }
+    var isConversationLive: Bool { keepListening }
     var isSimulator: Bool { DeviceEnvironment.isSimulator }
 
     var showsStop: Bool {
@@ -86,6 +87,7 @@ final class SessionController: ObservableObject {
     }
 
     var isLiveTurn: Bool {
+        if showCaptionBoard || keepListening { return true }
         switch phase {
         case .idle, .error:
             return false
@@ -144,7 +146,7 @@ final class SessionController: ObservableObject {
     }
 
     func startHearingMe() {
-        keepListening = false
+        keepListening = true
         listenMode = .locked(.meToThem)
         classifiedDirection = .meToThem
         whoLabel = "I speak"
@@ -180,12 +182,8 @@ final class SessionController: ObservableObject {
     }
 
     func dismissCaption() {
-        let shouldResume = keepListening && captionHolds
         showCaptionBoard = false
         captionHolds = false
-        if shouldResume, !phase.isCapturing {
-            beginCapture()
-        }
     }
 
     /// Headless drive: `xcrun simctl launch <udid> com.gianlucaminoprio.eartalk speak`
@@ -241,17 +239,14 @@ final class SessionController: ObservableObject {
 
     private func beginCapture() {
         refreshHeadphones()
-        pipelineTask?.cancel()
         listenTask?.cancel()
-        player.stop()
         liveTranscript = ""
-        liveTranslation = ""
         lastDetectedLanguage = nil
-        showCaptionBoard = false
-        captionHolds = false
         if listenMode == .auto {
             classifiedDirection = nil
-            whoLabel = ""
+            if !showCaptionBoard {
+                whoLabel = ""
+            }
         }
         debugLine = ""
 
@@ -268,14 +263,16 @@ final class SessionController: ObservableObject {
                 return
             }
             do {
-                let mic: CaptureMic
-                switch listenMode {
-                case .auto, .locked(.themToMe):
-                    mic = .them
-                case .locked(.meToThem):
-                    mic = .me
+                if !capture.isRecording {
+                    let mic: CaptureMic
+                    switch listenMode {
+                    case .auto, .locked(.themToMe):
+                        mic = .them
+                    case .locked(.meToThem):
+                        mic = .me
+                    }
+                    try capture.start(mic: mic)
                 }
-                try capture.start(mic: mic)
                 applyListeningPhase()
                 debugLine = listenHint
                 startListenMonitor()
@@ -326,13 +323,32 @@ final class SessionController: ObservableObject {
         var heardSpeech = false
         var speechFor: TimeInterval = 0
         var silentFor: TimeInterval = 0
-        let started = Date()
+        var started = Date()
 
-        while !Task.isCancelled, isInListenPhase(phase) {
+        while !Task.isCancelled, keepListening {
             try? await Task.sleep(nanoseconds: 100_000_000)
+            if case .error = phase { break }
 
             capture.updateMeters()
-            if capture.averagePower > -32 {
+            refreshHeadphones()
+
+            let playing = player.isPlaying
+            let bargeThreshold: Float = (playing && !headphonesWorn) ? -16 : -32
+            let loudEnough = capture.averagePower > bargeThreshold
+
+            if playing {
+                if loudEnough {
+                    speechFor += 0.1
+                    if speechFor >= 0.35 {
+                        player.stop()
+                    }
+                } else {
+                    speechFor = 0
+                }
+                continue
+            }
+
+            if loudEnough {
                 heardSpeech = true
                 speechFor += 0.1
                 silentFor = 0
@@ -341,12 +357,27 @@ final class SessionController: ObservableObject {
             }
 
             let elapsed = Date().timeIntervalSince(started)
-            // Need real speech, not a button rustle, then a pause.
-            // Do not rotate mid-turn. The last file must still contain the words.
             if heardSpeech, speechFor >= 0.6, silentFor >= 1.7, elapsed >= 2.2 {
-                let file = capture.stop()
+                let file = (try? capture.rotate()) ?? capture.stop()
+                if !capture.isRecording {
+                    let mic: CaptureMic = {
+                        switch listenMode {
+                        case .auto, .locked(.themToMe): return .them
+                        case .locked(.meToThem): return .me
+                        }
+                    }()
+                    try? capture.start(mic: mic)
+                }
+                heardSpeech = false
+                speechFor = 0
+                silentFor = 0
+                started = Date()
+                liveTranscript = ""
+                if listenMode == .auto {
+                    classifiedDirection = nil
+                }
+                pipelineTask?.cancel()
                 pipelineTask = Task { await finishTurn(lastChunk: file) }
-                return
             }
         }
     }
@@ -370,11 +401,6 @@ final class SessionController: ObservableObject {
     }
 
     private func finishTurn(lastChunk: URL? = nil) async {
-        // Never run this on listenTask. Canceling that task from here used to
-        // mark the translate/TTS work cancelled, then we swallowed it and
-        // stayed on Translating.
-        listenTask?.cancel()
-        listenTask = nil
         defer {
             if let lastChunk {
                 try? FileManager.default.removeItem(at: lastChunk)
@@ -386,7 +412,7 @@ final class SessionController: ObservableObject {
             if let lastChunk {
                 let bytes = (try? FileManager.default.attributesOfItem(atPath: lastChunk.path)[.size] as? NSNumber)?.intValue ?? 0
                 if bytes < 2500 {
-                    phase = .error("Mic caught silence. Hold the phone closer and talk a bit longer.")
+                    applyListeningPhase()
                     return
                 }
                 let result = try await transcribeUtterance(fileURL: lastChunk, bearer: bearer)
@@ -396,7 +422,7 @@ final class SessionController: ObservableObject {
 
             let text = liveTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
             guard TranscriptMerge.isUsable(text) else {
-                phase = .error("Nothing heard. Hold the phone closer and talk a bit longer.")
+                applyListeningPhase()
                 return
             }
 
@@ -407,7 +433,6 @@ final class SessionController: ObservableObject {
             lastAutoWasThem = direction == .themToMe
 
             phase = direction == .themToMe ? .translatingThem : .translatingMe
-            debugLine = "Translate \(settings.chatModel)…"
 
             let from = direction == .themToMe ? settings.theirLang : settings.myLang
             let to = direction == .themToMe ? settings.myLang : settings.theirLang
@@ -431,55 +456,36 @@ final class SessionController: ObservableObject {
             history.insert(turn, at: 0)
             if history.count > 30 { history = Array(history.prefix(30)) }
 
+            presentCaption(turn, hold: true)
+
+            let audio = try await client.synthesize(
+                text: translated,
+                bearer: bearer,
+                voiceID: direction == .themToMe ? settings.earVoiceID : settings.speakerVoiceID,
+                language: to.ttsCode
+            )
+            try Task.checkCancellation()
+            refreshHeadphones()
+            let route: AudioRoute
             if direction == .themToMe {
-                presentCaption(turn, hold: false)
                 phase = .playingEar
-                debugLine = ""
-                let audio = try await client.synthesize(
-                    text: translated,
-                    bearer: bearer,
-                    voiceID: settings.earVoiceID,
-                    language: to.ttsCode
-                )
-                try Task.checkCancellation()
-                refreshHeadphones()
-                let inbound: AudioRoute = headphonesWorn ? .earbuds : .speaker
-                try await player.play(data: audio, route: inbound, volume: Float(settings.earVolume))
-                try Task.checkCancellation()
-                showCaptionBoard = false
-                if keepListening {
-                    beginCapture()
-                } else {
-                    phase = .idle
-                    debugLine = ""
-                }
+                route = headphonesWorn ? .earbuds : .speaker
             } else {
-                presentCaption(turn, hold: true)
                 phase = .playingSpeaker
-                debugLine = ""
-                let audio = try await client.synthesize(
-                    text: translated,
-                    bearer: bearer,
-                    voiceID: settings.speakerVoiceID,
-                    language: to.ttsCode
-                )
-                try Task.checkCancellation()
-                try await player.play(data: audio, route: .speaker, volume: Float(settings.speakerVolume))
-                try Task.checkCancellation()
-                phase = .idle
-                debugLine = ""
+                route = .speaker
             }
+            let volume = direction == .themToMe ? Float(settings.earVolume) : Float(settings.speakerVolume)
+            try await player.play(data: audio, route: route, volume: volume)
+            applyListeningPhase()
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         } catch is CancellationError {
-            if phase == .translatingThem || phase == .translatingMe || phase == .playingEar || phase == .playingSpeaker {
-                phase = .error("Stopped.")
-            }
+            applyListeningPhase()
         } catch {
             guard !Task.isCancelled else { return }
             phase = .error(error.localizedDescription)
-            debugLine = ""
         }
     }
+
 
     private func transcribeUtterance(fileURL: URL, bearer: String) async throws -> STTResult {
         var lastError: Error?
@@ -558,13 +564,12 @@ final class SessionController: ObservableObject {
                 targetLanguage: settings.myLanguage
             )
             history.insert(turn, at: 0)
-            presentCaption(turn, hold: false)
+            presentCaption(turn, hold: true)
             phase = .playingEar
             debugLine = ""
             try? await Task.sleep(nanoseconds: 900_000_000)
             guard !Task.isCancelled else { return }
-            showCaptionBoard = false
-            phase = .idle
+            phase = .listening
         } else {
             phase = .hearingMe
             whoLabel = "I speak"
@@ -589,7 +594,7 @@ final class SessionController: ObservableObject {
             debugLine = ""
             try? await Task.sleep(nanoseconds: 600_000_000)
             guard !Task.isCancelled else { return }
-            phase = .idle
+            phase = .listening
         }
         UINotificationFeedbackGenerator().notificationOccurred(.success)
     }

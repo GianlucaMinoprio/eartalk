@@ -16,12 +16,12 @@ final class SpeechPlayer: NSObject, ObservableObject, AVAudioPlayerDelegate {
         switch route {
         case .earbuds:
             if Headphones.areWorn() {
-                try AudioRouter.configure(for: .playEar)
+                try AudioRouter.configure(for: .playEar, deactivateFirst: false)
             } else {
-                try AudioRouter.configure(for: .playSpeaker)
+                try AudioRouter.configure(for: .playSpeaker, deactivateFirst: false)
             }
         case .speaker:
-            try AudioRouter.configure(for: .playSpeaker)
+            try AudioRouter.configure(for: .playSpeaker, deactivateFirst: false)
             raiseSystemVolume(to: max(0.2, min(1, volume)))
         }
 
