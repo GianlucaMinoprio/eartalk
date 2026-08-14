@@ -20,6 +20,8 @@ SWIFT = [
     ("Services", "XAIClient.swift"),
     ("Utilities", "KeychainStore.swift"),
     ("Utilities", "SpokenLanguage.swift"),
+    ("Utilities", "DemoLines.swift"),
+    ("Utilities", "SpeakerSense.swift"),
     ("Views", "RootView.swift"),
     ("Views", "SettingsView.swift"),
     ("Views", "SuperGrokSignInView.swift"),

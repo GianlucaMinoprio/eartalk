@@ -12,6 +12,7 @@ final class SessionController: ObservableObject {
     @Published var debugLine: String = ""
     @Published var showCaptionBoard = false
     @Published var captionTurn: ConversationTurn?
+    @Published var whoLabel: String = ""
 
     let capture = AudioCaptureService()
     let player = SpeechPlayer()
@@ -19,8 +20,17 @@ final class SessionController: ObservableObject {
 
     private var pipelineTask: Task<Void, Never>?
     private var listenTask: Task<Void, Never>?
-    private var keepHearingThem = false
+    private var keepListening = false
     private var didHandleLaunchArgs = false
+    private var listenMode: ListenMode = .auto
+    private var classifiedDirection: TalkDirection?
+    private var lastDetectedLanguage: String?
+    private var lastAutoWasThem = true
+
+    private enum ListenMode: Equatable {
+        case auto
+        case locked(TalkDirection)
+    }
 
     init() {
         settings = AppSettings.load()
@@ -49,18 +59,31 @@ final class SessionController: ObservableObject {
         settings.save()
     }
 
+    func startListening() {
+        keepListening = true
+        listenMode = .auto
+        classifiedDirection = nil
+        beginCapture()
+    }
+
     func startHearingThem() {
-        keepHearingThem = true
-        beginCapture(direction: .themToMe)
+        keepListening = true
+        listenMode = .locked(.themToMe)
+        classifiedDirection = .themToMe
+        whoLabel = "Locked on them"
+        beginCapture()
     }
 
     func startHearingMe() {
-        keepHearingThem = false
-        beginCapture(direction: .meToThem)
+        keepListening = false
+        listenMode = .locked(.meToThem)
+        classifiedDirection = .meToThem
+        whoLabel = "Locked on you"
+        beginCapture()
     }
 
     func stopSession() {
-        keepHearingThem = false
+        keepListening = false
         listenTask?.cancel()
         pipelineTask?.cancel()
         _ = capture.stop()
@@ -69,6 +92,7 @@ final class SessionController: ObservableObject {
         debugLine = "Stopped"
         liveTranscript = ""
         liveTranslation = ""
+        whoLabel = ""
     }
 
     func resetToIdle() {
@@ -86,10 +110,21 @@ final class SessionController: ObservableObject {
     func handleLaunchArguments(_ args: [String]) {
         guard !didHandleLaunchArgs else { return }
         didHandleLaunchArgs = true
+        for arg in args {
+            if arg.hasPrefix("their=") {
+                settings.theirLanguage = String(arg.dropFirst(6))
+                settings.save()
+            } else if arg.hasPrefix("mine=") {
+                settings.myLanguage = String(arg.dropFirst(5))
+                settings.save()
+            }
+        }
         if args.contains("speak") {
             startHearingMe()
         } else if args.contains("hear") {
             startHearingThem()
+        } else if args.contains("listen") {
+            startListening()
         } else if args.contains("reset") {
             resetToIdle()
         }
@@ -100,8 +135,10 @@ final class SessionController: ObservableObject {
         guard url.scheme?.lowercased() == "eartalk" else { return }
         let action = (url.host ?? url.path).trimmingCharacters(in: CharacterSet(charactersIn: "/")).lowercased()
         switch action {
-        case "hear", "listen", "them":
+        case "hear", "them":
             startHearingThem()
+        case "listen", "auto":
+            startListening()
         case "speak", "me":
             startHearingMe()
         case "stop":
@@ -120,16 +157,21 @@ final class SessionController: ObservableObject {
 
     // MARK: - Capture
 
-    private func beginCapture(direction: TalkDirection) {
+    private func beginCapture() {
         pipelineTask?.cancel()
         listenTask?.cancel()
         player.stop()
         liveTranscript = ""
         liveTranslation = ""
+        lastDetectedLanguage = nil
+        if listenMode == .auto {
+            classifiedDirection = nil
+            whoLabel = ""
+        }
         debugLine = ""
 
         if !settings.hasLiveCredential {
-            pipelineTask = Task { await runDemo(direction: direction) }
+            pipelineTask = Task { await runDemo() }
             return
         }
 
@@ -141,12 +183,17 @@ final class SessionController: ObservableObject {
                 return
             }
             do {
-                try capture.start(mic: direction == .themToMe ? .them : .me)
-                phase = direction == .themToMe ? .hearingThem : .hearingMe
-                debugLine = direction == .themToMe
-                    ? "Point the phone at them. Silence ends the turn."
-                    : "Talk. Silence translates you out."
-                startListenMonitor(direction: direction)
+                let mic: CaptureMic
+                switch listenMode {
+                case .auto, .locked(.themToMe):
+                    mic = .them
+                case .locked(.meToThem):
+                    mic = .me
+                }
+                try capture.start(mic: mic)
+                applyListeningPhase()
+                debugLine = listenHint
+                startListenMonitor()
             } catch {
                 guard !Task.isCancelled else { return }
                 phase = .error(error.localizedDescription)
@@ -154,19 +201,49 @@ final class SessionController: ObservableObject {
         }
     }
 
-    private func startListenMonitor(direction: TalkDirection) {
-        listenTask?.cancel()
-        listenTask = Task { await monitorListening(direction: direction) }
+    private var listenHint: String {
+        switch listenMode {
+        case .auto:
+            return "Talk or let them talk. I guess from the language."
+        case .locked(.themToMe):
+            return "Point the phone at them. Silence ends the turn."
+        case .locked(.meToThem):
+            return "Talk. Silence translates you out."
+        }
     }
 
-    private func monitorListening(direction: TalkDirection) async {
+    private func applyListeningPhase() {
+        switch classifiedDirection {
+        case .themToMe:
+            phase = .hearingThem
+        case .meToThem:
+            phase = .hearingMe
+        case nil:
+            phase = listenMode == .auto ? .listening : .hearingThem
+        }
+    }
+
+    private func startListenMonitor() {
+        listenTask?.cancel()
+        listenTask = Task { await monitorListening() }
+    }
+
+    private func isInListenPhase(_ phase: SessionPhase) -> Bool {
+        switch phase {
+        case .listening, .hearingThem, .hearingMe:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func monitorListening() async {
         var heardSpeech = false
         var silentFor: TimeInterval = 0
         var lastRotate = Date()
         let started = Date()
-        let listeningPhase: SessionPhase = direction == .themToMe ? .hearingThem : .hearingMe
 
-        while !Task.isCancelled, phase == listeningPhase {
+        while !Task.isCancelled, isInListenPhase(phase) {
             try? await Task.sleep(nanoseconds: 100_000_000)
 
             capture.updateMeters()
@@ -177,35 +254,70 @@ final class SessionController: ObservableObject {
                 silentFor += 0.1
             }
 
-            if Date().timeIntervalSince(lastRotate) >= 2.6, phase == listeningPhase {
+            if Date().timeIntervalSince(lastRotate) >= 2.6, isInListenPhase(phase) {
                 lastRotate = Date()
-                await liveTranscribeChunk(direction: direction)
+                await liveTranscribeChunk()
             }
 
             let elapsed = Date().timeIntervalSince(started)
             if heardSpeech, silentFor >= 1.5, elapsed >= 1.8 {
-                await finishTurn(direction: direction)
+                await finishTurn()
                 return
             }
         }
     }
 
-    private func liveTranscribeChunk(direction: TalkDirection) async {
+    private func sttLanguageHint() -> String? {
+        switch listenMode {
+        case .auto:
+            return nil
+        case .locked(.themToMe):
+            return settings.theirLang.sttCode
+        case .locked(.meToThem):
+            return settings.myLang.sttCode
+        }
+    }
+
+    private func applyClassification(text: String, detected: String?) {
+        lastDetectedLanguage = detected
+        switch listenMode {
+        case .locked(let direction):
+            classifiedDirection = direction
+        case .auto:
+            let result = SpeakerSense.direction(
+                text: text,
+                detectedLanguage: detected,
+                my: settings.myLang,
+                their: settings.theirLang
+            )
+            classifiedDirection = result.0
+            whoLabel = result.1
+            applyListeningPhase()
+        }
+    }
+
+    private func liveTranscribeChunk() async {
         guard settings.hasLiveCredential else { return }
         do {
             guard let url = try capture.rotate() else { return }
             defer { try? FileManager.default.removeItem(at: url) }
             try Task.checkCancellation()
             let bearer = try await SuperGrokAuth.shared.validAccessToken()
-            let lang = direction == .themToMe ? settings.theirLang.sttCode : settings.myLang.sttCode
-            let piece = try await client.transcribe(fileURL: url, bearer: bearer, language: lang)
-            appendLive(piece)
+            let result = try await client.transcribe(
+                fileURL: url,
+                bearer: bearer,
+                language: sttLanguageHint()
+            )
+            appendLive(result.text)
+            if classifiedDirection == nil || listenMode == .auto {
+                applyClassification(text: liveTranscript, detected: result.language)
+            }
         } catch {
             // Chunk STT can fail on silence. Keep listening.
         }
     }
 
-    private func finishTurn(direction: TalkDirection) async {
+    private func finishTurn() async {
         listenTask?.cancel()
         let lastChunk = capture.stop()
         defer {
@@ -217,11 +329,14 @@ final class SessionController: ObservableObject {
         do {
             let bearer = try await SuperGrokAuth.shared.validAccessToken()
             if let lastChunk {
-                phase = direction == .themToMe ? .transcribingThem : .transcribingMe
                 debugLine = "STT…"
-                let lang = direction == .themToMe ? settings.theirLang.sttCode : settings.myLang.sttCode
-                if let piece = try? await client.transcribe(fileURL: lastChunk, bearer: bearer, language: lang) {
-                    appendLive(piece)
+                if let result = try? await client.transcribe(
+                    fileURL: lastChunk,
+                    bearer: bearer,
+                    language: sttLanguageHint()
+                ) {
+                    appendLive(result.text)
+                    applyClassification(text: liveTranscript, detected: result.language)
                 }
             }
 
@@ -230,6 +345,12 @@ final class SessionController: ObservableObject {
                 phase = .error("Nothing heard. Try again a bit closer.")
                 return
             }
+
+            if classifiedDirection == nil {
+                applyClassification(text: text, detected: lastDetectedLanguage)
+            }
+            let direction = classifiedDirection ?? .themToMe
+            lastAutoWasThem = direction == .themToMe
 
             phase = direction == .themToMe ? .translatingThem : .translatingMe
             debugLine = "Translate \(settings.chatModel)…"
@@ -268,8 +389,8 @@ final class SessionController: ObservableObject {
                 try Task.checkCancellation()
                 try await player.play(data: audio, route: .earbuds, volume: Float(settings.earVolume))
                 try Task.checkCancellation()
-                if keepHearingThem {
-                    beginCapture(direction: .themToMe)
+                if keepListening {
+                    beginCapture()
                 } else {
                     phase = .idle
                     debugLine = ""
@@ -288,8 +409,12 @@ final class SessionController: ObservableObject {
                 try Task.checkCancellation()
                 try await player.play(data: audio, route: .speaker, volume: Float(settings.speakerVolume))
                 try Task.checkCancellation()
-                phase = .idle
-                debugLine = "Hold the screen toward them"
+                if keepListening, listenMode == .auto {
+                    beginCapture()
+                } else {
+                    phase = .idle
+                    debugLine = "Hold the screen toward them"
+                }
             }
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         } catch is CancellationError {
@@ -337,15 +462,26 @@ final class SessionController: ObservableObject {
 
     // MARK: - Demo
 
-    private func runDemo(direction: TalkDirection) async {
+    private func runDemo() async {
+        let direction: TalkDirection
+        switch listenMode {
+        case .locked(let locked):
+            direction = locked
+        case .auto:
+            direction = lastAutoWasThem ? .themToMe : .meToThem
+            lastAutoWasThem.toggle()
+        }
+        classifiedDirection = direction
+
         if direction == .themToMe {
             phase = .hearingThem
-            debugLine = "Demo. Pretending they spoke Chinese."
-            liveTranscript = "你好，很高兴认识你。今天天气很好。"
+            whoLabel = "Sounds like \(settings.theirLang.name). That's them."
+            debugLine = "Demo. Pretending they spoke \(settings.theirLang.name)."
+            liveTranscript = DemoLines.themSaid(settings.theirLang)
             try? await Task.sleep(nanoseconds: 900_000_000)
             guard !Task.isCancelled else { return }
             phase = .translatingThem
-            liveTranslation = "Hi, nice to meet you. The weather is really nice today."
+            liveTranslation = DemoLines.themHeard(settings.myLang)
             try? await Task.sleep(nanoseconds: 400_000_000)
             guard !Task.isCancelled else { return }
             let turn = ConversationTurn(
@@ -360,22 +496,17 @@ final class SessionController: ObservableObject {
             debugLine = "Demo ear playback skipped"
             try? await Task.sleep(nanoseconds: 700_000_000)
             guard !Task.isCancelled else { return }
-            if keepHearingThem {
-                phase = .idle
-                debugLine = "Demo turn done. Tap Hear them again."
-                keepHearingThem = false
-            } else {
-                phase = .idle
-                debugLine = ""
-            }
+            phase = .idle
+            debugLine = "Tap Listen again for the other side"
         } else {
             phase = .hearingMe
-            debugLine = "Demo. Pretending you spoke English."
-            liveTranscript = "Hi, nice to meet you. Want to grab coffee around the corner?"
+            whoLabel = "Sounds like \(settings.myLang.name). That's you."
+            debugLine = "Demo. Pretending you spoke \(settings.myLang.name)."
+            liveTranscript = DemoLines.meSaid(settings.myLang)
             try? await Task.sleep(nanoseconds: 900_000_000)
             guard !Task.isCancelled else { return }
             phase = .translatingMe
-            liveTranslation = "你好，很高兴认识你。要不要去街角喝杯咖啡？"
+            liveTranslation = DemoLines.meOut(settings.theirLang)
             try? await Task.sleep(nanoseconds: 400_000_000)
             guard !Task.isCancelled else { return }
             let turn = ConversationTurn(

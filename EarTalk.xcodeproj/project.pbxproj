@@ -7,43 +7,47 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		47667885E8C344B18F180B9C /* EarTalkApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B362F24376B54382A04D275B /* EarTalkApp.swift */; };
-		ADBEFBA9CF0F46828DC80106 /* SessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AA1257E67644E60BEF1E573 /* SessionController.swift */; };
-		DDDDDACD6F074739BC5D5FDD /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA08564BFAD24A16BFBE6672 /* Models.swift */; };
-		EEB5DD24CA9A4A5A800151CC /* AudioCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26376067D180421882E9F8AC /* AudioCaptureService.swift */; };
-		00D94E0C359A474CADDE7620 /* SpeechPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E26F9A85231447FA43091FC /* SpeechPlayer.swift */; };
-		3A93FD4A9C43421EB7FBBA5B /* SuperGrokAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11AFF58BB2F74213BB588EF7 /* SuperGrokAuth.swift */; };
-		2595893F317D44D9889CABA7 /* XAIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07160B7309DC40D884C3414C /* XAIClient.swift */; };
-		7F41F166882D4172B020F7D6 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1796FD90298146BAAB6D867F /* KeychainStore.swift */; };
-		EA09FE3CDEFF4718939270BD /* SpokenLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC8376C4892E46CB984D9654 /* SpokenLanguage.swift */; };
-		5864206FDA6D472B8E39EC05 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CBE3A0E135749D7B30AF323 /* RootView.swift */; };
-		43525BD4E2FB4F2C82D0C713 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33452195FDA446EAA27C2AF /* SettingsView.swift */; };
-		5F9A8DA292D44BBFBAB9F68E /* SuperGrokSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B828311C5D54AE1BBFE74E5 /* SuperGrokSignInView.swift */; };
-		156EF50DB2B3469AB353E23A /* CaptionBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31D0A646F7664AF2A43D7258 /* CaptionBoardView.swift */; };
-		36843F85F22F4F17B2738E77 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 90C07CF44F8E453A8F8EC077 /* Assets.xcassets */; };
+		E301E61478E84BEEAA2C0136 /* EarTalkApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B8F951BC93241BEA89AF617 /* EarTalkApp.swift */; };
+		AB5F805DCCB648CE9E329924 /* SessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 476CD4545E534CC6AD2B3E7C /* SessionController.swift */; };
+		4A13F80EE99947689C05213D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACE70AB3D73A4DAAB1570510 /* Models.swift */; };
+		B40009A1B2AF458590FB0249 /* AudioCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0FD75CB96E94A9992C2E2EA /* AudioCaptureService.swift */; };
+		ED5D048AB4F6472DA8F9CDCD /* SpeechPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAF98AE02084C6FA3DB52FB /* SpeechPlayer.swift */; };
+		2F054D28C2DD4801805DD927 /* SuperGrokAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD48D567E2A8422A99A0D91D /* SuperGrokAuth.swift */; };
+		906D0DF0718A4022B583D215 /* XAIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F64A02D7E2D49D48AD1DB9C /* XAIClient.swift */; };
+		ED0D71ABC88B449699E98E4B /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6037D7BA804A4F0492BAB24D /* KeychainStore.swift */; };
+		A4BF59E02CD545B09828854B /* SpokenLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5F34DD28EF4B22930EBBF5 /* SpokenLanguage.swift */; };
+		DA85AA64590949F3AF2719DE /* DemoLines.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC0E68A9DAF8481B8FD96812 /* DemoLines.swift */; };
+		4FE7561136064E7FB37ADB35 /* SpeakerSense.swift in Sources */ = {isa = PBXBuildFile; fileRef = 718FF600947A4CC79E7C8E9A /* SpeakerSense.swift */; };
+		DF611E7475CC4AF9B24D74CB /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FE1DC907E8400583E83391 /* RootView.swift */; };
+		8B4A804852604D60A6D7A2F4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89826E0EFF354192A96F4D03 /* SettingsView.swift */; };
+		BEB99ECA50AD499E92FEB76D /* SuperGrokSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61919C96C42D4A549DB63140 /* SuperGrokSignInView.swift */; };
+		D6644B5F2BBB4B77982D2815 /* CaptionBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 388FCEBF5AA94645963E691A /* CaptionBoardView.swift */; };
+		5A7BC9D51D654EBB840E97AD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C7775BE3366A4FF0969C5B2F /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		B362F24376B54382A04D275B /* EarTalkApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EarTalkApp.swift; sourceTree = "<group>"; };
-		4AA1257E67644E60BEF1E573 /* SessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionController.swift; sourceTree = "<group>"; };
-		FA08564BFAD24A16BFBE6672 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		26376067D180421882E9F8AC /* AudioCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureService.swift; sourceTree = "<group>"; };
-		9E26F9A85231447FA43091FC /* SpeechPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechPlayer.swift; sourceTree = "<group>"; };
-		11AFF58BB2F74213BB588EF7 /* SuperGrokAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperGrokAuth.swift; sourceTree = "<group>"; };
-		07160B7309DC40D884C3414C /* XAIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XAIClient.swift; sourceTree = "<group>"; };
-		1796FD90298146BAAB6D867F /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
-		FC8376C4892E46CB984D9654 /* SpokenLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpokenLanguage.swift; sourceTree = "<group>"; };
-		1CBE3A0E135749D7B30AF323 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
-		C33452195FDA446EAA27C2AF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		1B828311C5D54AE1BBFE74E5 /* SuperGrokSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperGrokSignInView.swift; sourceTree = "<group>"; };
-		31D0A646F7664AF2A43D7258 /* CaptionBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionBoardView.swift; sourceTree = "<group>"; };
-		DC7F1A94D19E4F1DBD2C9F40 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		90C07CF44F8E453A8F8EC077 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		943ACC1FC5D840459A4B1BDD /* EarTalk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EarTalk.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1B8F951BC93241BEA89AF617 /* EarTalkApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EarTalkApp.swift; sourceTree = "<group>"; };
+		476CD4545E534CC6AD2B3E7C /* SessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionController.swift; sourceTree = "<group>"; };
+		ACE70AB3D73A4DAAB1570510 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		E0FD75CB96E94A9992C2E2EA /* AudioCaptureService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCaptureService.swift; sourceTree = "<group>"; };
+		EBAF98AE02084C6FA3DB52FB /* SpeechPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechPlayer.swift; sourceTree = "<group>"; };
+		FD48D567E2A8422A99A0D91D /* SuperGrokAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperGrokAuth.swift; sourceTree = "<group>"; };
+		1F64A02D7E2D49D48AD1DB9C /* XAIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XAIClient.swift; sourceTree = "<group>"; };
+		6037D7BA804A4F0492BAB24D /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		FB5F34DD28EF4B22930EBBF5 /* SpokenLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpokenLanguage.swift; sourceTree = "<group>"; };
+		FC0E68A9DAF8481B8FD96812 /* DemoLines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoLines.swift; sourceTree = "<group>"; };
+		718FF600947A4CC79E7C8E9A /* SpeakerSense.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerSense.swift; sourceTree = "<group>"; };
+		C0FE1DC907E8400583E83391 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		89826E0EFF354192A96F4D03 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		61919C96C42D4A549DB63140 /* SuperGrokSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperGrokSignInView.swift; sourceTree = "<group>"; };
+		388FCEBF5AA94645963E691A /* CaptionBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionBoardView.swift; sourceTree = "<group>"; };
+		0BCEEDA47CB3454B9BB45F38 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C7775BE3366A4FF0969C5B2F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C1BD3BB214B2472193E43F65 /* EarTalk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EarTalk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		AFEFD9E968B642C0AFEE957B /* Frameworks */ = {
+		01AD5A57D2974FBE8520F328 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -53,94 +57,96 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		63458F12F98D424FBD8089AC /* App */ = {
+		BE07DA66F7BA409C8D246814 /* App */ = {
 			isa = PBXGroup;
 			children = (
-				B362F24376B54382A04D275B /* EarTalkApp.swift */,
-				4AA1257E67644E60BEF1E573 /* SessionController.swift */,
+				1B8F951BC93241BEA89AF617 /* EarTalkApp.swift */,
+				476CD4545E534CC6AD2B3E7C /* SessionController.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
 		};
-		60EE2FAF2902457C88C31398 /* Models */ = {
+		6DB1DA95D5204EC2BDB7673E /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				FA08564BFAD24A16BFBE6672 /* Models.swift */,
+				ACE70AB3D73A4DAAB1570510 /* Models.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
 		};
-		47F8C78DAAF64D97BB2FB170 /* Services */ = {
+		AC926EF9B55C478E9399CA19 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				26376067D180421882E9F8AC /* AudioCaptureService.swift */,
-				9E26F9A85231447FA43091FC /* SpeechPlayer.swift */,
-				11AFF58BB2F74213BB588EF7 /* SuperGrokAuth.swift */,
-				07160B7309DC40D884C3414C /* XAIClient.swift */,
+				E0FD75CB96E94A9992C2E2EA /* AudioCaptureService.swift */,
+				EBAF98AE02084C6FA3DB52FB /* SpeechPlayer.swift */,
+				FD48D567E2A8422A99A0D91D /* SuperGrokAuth.swift */,
+				1F64A02D7E2D49D48AD1DB9C /* XAIClient.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
 		};
-		2A7973625433499AB5B86AEB /* Views */ = {
+		929F84BF95854190B6D21D2B /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				1CBE3A0E135749D7B30AF323 /* RootView.swift */,
-				C33452195FDA446EAA27C2AF /* SettingsView.swift */,
-				1B828311C5D54AE1BBFE74E5 /* SuperGrokSignInView.swift */,
-				31D0A646F7664AF2A43D7258 /* CaptionBoardView.swift */,
+				C0FE1DC907E8400583E83391 /* RootView.swift */,
+				89826E0EFF354192A96F4D03 /* SettingsView.swift */,
+				61919C96C42D4A549DB63140 /* SuperGrokSignInView.swift */,
+				388FCEBF5AA94645963E691A /* CaptionBoardView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
 		};
-		F1E8E275B8644C9CBF57244C /* Utilities */ = {
+		0677FC5BD3D54BB8BB2BD9B6 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
-				1796FD90298146BAAB6D867F /* KeychainStore.swift */,
-				FC8376C4892E46CB984D9654 /* SpokenLanguage.swift */,
+				6037D7BA804A4F0492BAB24D /* KeychainStore.swift */,
+				FB5F34DD28EF4B22930EBBF5 /* SpokenLanguage.swift */,
+				FC0E68A9DAF8481B8FD96812 /* DemoLines.swift */,
+				718FF600947A4CC79E7C8E9A /* SpeakerSense.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
 		};
-		67A132FE5D9B4B6A83CDF925 /* EarTalk */ = {
+		F67A1C4ACC164225B5672763 /* EarTalk */ = {
 			isa = PBXGroup;
 			children = (
-				63458F12F98D424FBD8089AC /* App */,
-				60EE2FAF2902457C88C31398 /* Models */,
-				47F8C78DAAF64D97BB2FB170 /* Services */,
-				2A7973625433499AB5B86AEB /* Views */,
-				F1E8E275B8644C9CBF57244C /* Utilities */,
-				90C07CF44F8E453A8F8EC077 /* Assets.xcassets */,
-				DC7F1A94D19E4F1DBD2C9F40 /* Info.plist */,
+				BE07DA66F7BA409C8D246814 /* App */,
+				6DB1DA95D5204EC2BDB7673E /* Models */,
+				AC926EF9B55C478E9399CA19 /* Services */,
+				929F84BF95854190B6D21D2B /* Views */,
+				0677FC5BD3D54BB8BB2BD9B6 /* Utilities */,
+				C7775BE3366A4FF0969C5B2F /* Assets.xcassets */,
+				0BCEEDA47CB3454B9BB45F38 /* Info.plist */,
 			);
 			path = EarTalk;
 			sourceTree = "<group>";
 		};
-		0995E25FD5F24548B1EC8250 /* Products */ = {
+		BE09D96DD2814957B77C44D7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				943ACC1FC5D840459A4B1BDD /* EarTalk.app */,
+				C1BD3BB214B2472193E43F65 /* EarTalk.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		AAC16FC883B341B2A925CF11 = {
+		96F2D34DB1F84190B296619D = {
 			isa = PBXGroup;
 			children = (
-				67A132FE5D9B4B6A83CDF925 /* EarTalk */,
-				0995E25FD5F24548B1EC8250 /* Products */,
+				F67A1C4ACC164225B5672763 /* EarTalk */,
+				BE09D96DD2814957B77C44D7 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		D6B9610F866A4A72AD34266A /* EarTalk */ = {
+		54EE15CA7DA84FFFBB630742 /* EarTalk */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 6086541C133547EF81180AC8 /* Build configuration list for PBXNativeTarget "EarTalk" */;
+			buildConfigurationList = 573CDF92F99345EA8608AFED /* Build configuration list for PBXNativeTarget "EarTalk" */;
 			buildPhases = (
-				6F1FF4E27E474B82B97CEFFA /* Sources */,
-				AFEFD9E968B642C0AFEE957B /* Frameworks */,
-				2302A35FB8F54ED2809A5EAC /* Resources */,
+				5905CFED1A454324A67BA25C /* Sources */,
+				01AD5A57D2974FBE8520F328 /* Frameworks */,
+				89C00A7C90604647B92E5BF0 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -148,25 +154,25 @@
 			);
 			name = EarTalk;
 			productName = EarTalk;
-			productReference = 943ACC1FC5D840459A4B1BDD /* EarTalk.app */;
+			productReference = C1BD3BB214B2472193E43F65 /* EarTalk.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		ED73C6FA43AB4AA1BAD9FACD /* Project object */ = {
+		FA0DF2F5A8034031A907BEFE /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
-					D6B9610F866A4A72AD34266A = {
+					54EE15CA7DA84FFFBB630742 = {
 						CreatedOnToolsVersion = 16.0;
 					};
 				};
 			};
-			buildConfigurationList = 816E19146CAF46E5B4F97242 /* Build configuration list for PBXProject "EarTalk" */;
+			buildConfigurationList = C25AA110254F4185A654777E /* Build configuration list for PBXProject "EarTalk" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -174,52 +180,54 @@
 				en,
 				Base,
 			);
-			mainGroup = AAC16FC883B341B2A925CF11;
-			productRefGroup = 0995E25FD5F24548B1EC8250 /* Products */;
+			mainGroup = 96F2D34DB1F84190B296619D;
+			productRefGroup = BE09D96DD2814957B77C44D7 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				D6B9610F866A4A72AD34266A /* EarTalk */,
+				54EE15CA7DA84FFFBB630742 /* EarTalk */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		2302A35FB8F54ED2809A5EAC /* Resources */ = {
+		89C00A7C90604647B92E5BF0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				36843F85F22F4F17B2738E77 /* Assets.xcassets in Resources */,
+				5A7BC9D51D654EBB840E97AD /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		6F1FF4E27E474B82B97CEFFA /* Sources */ = {
+		5905CFED1A454324A67BA25C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				47667885E8C344B18F180B9C /* EarTalkApp.swift in Sources */,
-				ADBEFBA9CF0F46828DC80106 /* SessionController.swift in Sources */,
-				DDDDDACD6F074739BC5D5FDD /* Models.swift in Sources */,
-				EEB5DD24CA9A4A5A800151CC /* AudioCaptureService.swift in Sources */,
-				00D94E0C359A474CADDE7620 /* SpeechPlayer.swift in Sources */,
-				3A93FD4A9C43421EB7FBBA5B /* SuperGrokAuth.swift in Sources */,
-				2595893F317D44D9889CABA7 /* XAIClient.swift in Sources */,
-				7F41F166882D4172B020F7D6 /* KeychainStore.swift in Sources */,
-				EA09FE3CDEFF4718939270BD /* SpokenLanguage.swift in Sources */,
-				5864206FDA6D472B8E39EC05 /* RootView.swift in Sources */,
-				43525BD4E2FB4F2C82D0C713 /* SettingsView.swift in Sources */,
-				5F9A8DA292D44BBFBAB9F68E /* SuperGrokSignInView.swift in Sources */,
-				156EF50DB2B3469AB353E23A /* CaptionBoardView.swift in Sources */,
+				E301E61478E84BEEAA2C0136 /* EarTalkApp.swift in Sources */,
+				AB5F805DCCB648CE9E329924 /* SessionController.swift in Sources */,
+				4A13F80EE99947689C05213D /* Models.swift in Sources */,
+				B40009A1B2AF458590FB0249 /* AudioCaptureService.swift in Sources */,
+				ED5D048AB4F6472DA8F9CDCD /* SpeechPlayer.swift in Sources */,
+				2F054D28C2DD4801805DD927 /* SuperGrokAuth.swift in Sources */,
+				906D0DF0718A4022B583D215 /* XAIClient.swift in Sources */,
+				ED0D71ABC88B449699E98E4B /* KeychainStore.swift in Sources */,
+				A4BF59E02CD545B09828854B /* SpokenLanguage.swift in Sources */,
+				DA85AA64590949F3AF2719DE /* DemoLines.swift in Sources */,
+				4FE7561136064E7FB37ADB35 /* SpeakerSense.swift in Sources */,
+				DF611E7475CC4AF9B24D74CB /* RootView.swift in Sources */,
+				8B4A804852604D60A6D7A2F4 /* SettingsView.swift in Sources */,
+				BEB99ECA50AD499E92FEB76D /* SuperGrokSignInView.swift in Sources */,
+				D6644B5F2BBB4B77982D2815 /* CaptionBoardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		309B0BEBFBE241EF97435C75 /* Debug */ = {
+		E4CEAE95851F4AA3B90F0568 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -273,7 +281,7 @@
 			};
 			name = Debug;
 		};
-		DEED42097E844FDB8EE73DAC /* Release */ = {
+		AA0AE6B5820F423FBFD03911 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -318,7 +326,7 @@
 			};
 			name = Release;
 		};
-		297C6B40DA9C4B57B53F5DD6 /* Debug */ = {
+		7ADB4FA3F04448DB9CF44A61 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -345,7 +353,7 @@
 			};
 			name = Debug;
 		};
-		747BD7E30F96428EB2E4171E /* Release */ = {
+		49DDC76170904D509CD0EF97 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -375,25 +383,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		6086541C133547EF81180AC8 /* Build configuration list for PBXNativeTarget "EarTalk" */ = {
+		573CDF92F99345EA8608AFED /* Build configuration list for PBXNativeTarget "EarTalk" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				297C6B40DA9C4B57B53F5DD6 /* Debug */,
-				747BD7E30F96428EB2E4171E /* Release */,
+				7ADB4FA3F04448DB9CF44A61 /* Debug */,
+				49DDC76170904D509CD0EF97 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		816E19146CAF46E5B4F97242 /* Build configuration list for PBXProject "EarTalk" */ = {
+		C25AA110254F4185A654777E /* Build configuration list for PBXProject "EarTalk" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				309B0BEBFBE241EF97435C75 /* Debug */,
-				DEED42097E844FDB8EE73DAC /* Release */,
+				E4CEAE95851F4AA3B90F0568 /* Debug */,
+				AA0AE6B5820F423FBFD03911 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = ED73C6FA43AB4AA1BAD9FACD /* Project object */;
+	rootObject = FA0DF2F5A8034031A907BEFE /* Project object */;
 }

@@ -36,25 +36,21 @@ struct RootView: View {
                     Spacer()
 
                     Button {
-                        session.startHearingThem()
+                        session.startListening()
                     } label: {
-                        if session.phase == .hearingThem {
-                            Label("Hearing…", systemImage: "ear.fill")
+                        if session.phase.isCapturing {
+                            Label("Listening…", systemImage: "waveform")
                         } else {
-                            Label("Hear them", systemImage: "ear")
+                            Label("Listen", systemImage: "waveform.circle.fill")
                         }
                     }
-                    .disabled(session.isBusy && session.phase != .hearingThem)
-                    .tint(session.phase == .hearingThem ? .red : .accentColor)
+                    .disabled(session.isBusy && !session.phase.isCapturing)
+                    .tint(session.phase.isCapturing ? .red : .accentColor)
 
                     Button {
                         session.startHearingMe()
                     } label: {
-                        if session.phase == .hearingMe {
-                            Label("Listening…", systemImage: "mic.fill")
-                        } else {
-                            Label("I speak", systemImage: "mic.circle.fill")
-                        }
+                        Label("I talk", systemImage: "mic.circle.fill")
                     }
                     .disabled(session.isBusy && session.phase != .hearingMe)
                     .buttonStyle(.borderedProminent)
@@ -106,33 +102,44 @@ struct RootView: View {
         } header: {
             Text("Languages")
         } footer: {
-            Text("They speak Chinese, you hear English. Then I speak flips it the other way.")
+            Text("They speak \(SpokenLanguage.named(session.settings.theirLanguage).name), you hear \(SpokenLanguage.named(session.settings.myLanguage).name).")
         }
     }
 
     private var actionsSection: some View {
         Section {
             Button {
+                session.startListening()
+            } label: {
+                Label(
+                    session.phase == .listening ? "Listening…" : "Listen",
+                    systemImage: session.phase == .listening ? "waveform.badge.mic" : "waveform.circle.fill"
+                )
+            }
+            .disabled(session.isBusy && !session.phase.isCapturing)
+            .fontWeight(.semibold)
+            .foregroundStyle(session.phase == .listening ? Color.red : Color.accentColor)
+
+            Button {
                 session.startHearingThem()
             } label: {
                 Label(
-                    session.phase == .hearingThem ? "Hearing them…" : "Hear them",
+                    session.phase == .hearingThem ? "Hearing them…" : "Force: they talk",
                     systemImage: session.phase == .hearingThem ? "ear.fill" : "ear"
                 )
             }
             .disabled(session.isBusy && session.phase != .hearingThem)
-            .foregroundStyle(session.phase == .hearingThem ? Color.red : Color.accentColor)
+            .foregroundStyle(session.phase == .hearingThem ? Color.red : Color.primary)
 
             Button {
                 session.startHearingMe()
             } label: {
                 Label(
-                    session.phase == .hearingMe ? "Listening to you…" : "I speak",
-                    systemImage: session.phase == .hearingMe ? "mic.fill" : "mic.circle.fill"
+                    session.phase == .hearingMe ? "Listening to you…" : "Force: I talk",
+                    systemImage: session.phase == .hearingMe ? "mic.fill" : "mic"
                 )
             }
             .disabled(session.isBusy && session.phase != .hearingMe)
-            .fontWeight(.semibold)
 
             if session.showsStop {
                 Button("Stop", role: .destructive) {
@@ -142,7 +149,7 @@ struct RootView: View {
         } header: {
             Text("Talk")
         } footer: {
-            Text("Hear them puts the translation in your AirPods. I speak plays their language out loud and shows huge text.")
+            Text("Listen guesses who spoke from the language. Force only if it gets it wrong.")
         }
     }
 
@@ -160,6 +167,12 @@ struct RootView: View {
                 Text(errorMessage)
                     .font(.footnote)
                     .foregroundStyle(.orange)
+            }
+
+            if !session.whoLabel.isEmpty {
+                Text(session.whoLabel)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
 
             if !session.debugLine.isEmpty {
@@ -182,6 +195,8 @@ struct RootView: View {
 
     private var footerCopy: String {
         switch session.phase {
+        case .listening:
+            return "One mic. I decide from the language they picked vs yours."
         case .hearingThem:
             return "Point the phone at them. Pause and it lands in your ear."
         case .hearingMe:
@@ -189,7 +204,7 @@ struct RootView: View {
         case .playingSpeaker:
             return "Hold the screen toward them."
         default:
-            return "Hear them for your AirPods. I speak for the person in front."
+            return "Listen for both of you. Force only if the guess is wrong."
         }
     }
 
@@ -199,7 +214,7 @@ struct RootView: View {
                 ContentUnavailableView(
                     "Nothing yet",
                     systemImage: "globe",
-                    description: Text("Tap Hear them when they talk, or I speak when it is your turn.")
+                    description: Text("Tap Listen. I hear both of you and pick a side from the language.")
                 )
                 .listRowBackground(Color.clear)
             } else {

@@ -14,6 +14,8 @@ need=(
   EarTalk/Services/XAIClient.swift
   EarTalk/Utilities/KeychainStore.swift
   EarTalk/Utilities/SpokenLanguage.swift
+  EarTalk/Utilities/DemoLines.swift
+  EarTalk/Utilities/SpeakerSense.swift
   EarTalk/Views/RootView.swift
   EarTalk/Views/SettingsView.swift
   EarTalk/Views/SuperGrokSignInView.swift

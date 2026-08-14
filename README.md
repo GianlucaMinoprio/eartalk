@@ -4,8 +4,8 @@ Live translator in your AirPods. Sister app to [NodVoice](https://github.com/Gia
 
 You pick the language they speak and the language you want to hear. Grok transcribes, translates, and talks.
 
-1. **Hear them** - phone mic catches their Chinese (or whatever you picked). Translation plays **in your AirPods** with Eve.
-2. **I speak** - you talk in your language. Grok speaks their language **out the iPhone speaker** and puts the translation in **huge text** so they can read along.
+1. **Listen** - one mic. Grok STT detects the language. If it matches **They speak**, translation plays in your AirPods. If it matches **I hear**, it speaks out + big text.
+2. **Force: they talk / I talk** if the guess is wrong.
 
 No API key. Sign in with SuperGrok.
 

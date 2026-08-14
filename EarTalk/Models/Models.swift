@@ -3,6 +3,7 @@ import SwiftUI
 
 enum SessionPhase: Equatable {
     case idle
+    case listening
     case hearingThem
     case transcribingThem
     case translatingThem
@@ -16,6 +17,7 @@ enum SessionPhase: Equatable {
     var shortLabel: String {
         switch self {
         case .idle: return "Ready"
+        case .listening: return "Listening"
         case .hearingThem: return "Hearing them"
         case .transcribingThem: return "Transcribing them"
         case .translatingThem: return "Translating to you"
@@ -31,6 +33,7 @@ enum SessionPhase: Equatable {
     var symbolName: String {
         switch self {
         case .idle: return "checkmark.circle"
+        case .listening: return "waveform.badge.mic"
         case .hearingThem: return "ear.fill"
         case .transcribingThem, .transcribingMe: return "waveform"
         case .translatingThem, .translatingMe: return "globe"
@@ -44,7 +47,7 @@ enum SessionPhase: Equatable {
     var tint: Color {
         switch self {
         case .idle: return .secondary
-        case .hearingThem, .hearingMe: return .red
+        case .listening, .hearingThem, .hearingMe: return .red
         case .transcribingThem, .transcribingMe, .translatingThem, .translatingMe: return .orange
         case .playingEar: return .accentColor
         case .playingSpeaker: return .blue
@@ -69,7 +72,7 @@ enum SessionPhase: Equatable {
 
     var isCapturing: Bool {
         switch self {
-        case .hearingThem, .hearingMe:
+        case .listening, .hearingThem, .hearingMe:
             return true
         default:
             return false

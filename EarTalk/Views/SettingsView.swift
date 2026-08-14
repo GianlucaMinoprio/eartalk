@@ -115,11 +115,15 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    LabeledContent("Hear them") {
+                    LabeledContent("Listen") {
+                        Text("Guesses them vs you from language")
+                            .foregroundStyle(.secondary)
+                    }
+                    LabeledContent("Force: they talk") {
                         Text("Phone mic, translation in AirPods")
                             .foregroundStyle(.secondary)
                     }
-                    LabeledContent("I speak") {
+                    LabeledContent("Force: I talk") {
                         Text("Your words out loud + big text")
                             .foregroundStyle(.secondary)
                     }
@@ -130,7 +134,7 @@ struct SettingsView: View {
                 } header: {
                     Text("How it works")
                 } footer: {
-                    Text("Point the phone at them when they talk so the built-in mic hears them, not your AirPods.")
+                    Text("Listen leaves language unlocked so Grok can tell German from English. Point the phone at them when they talk.")
                 }
 
                 Section {

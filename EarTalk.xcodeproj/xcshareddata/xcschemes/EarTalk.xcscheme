@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "D6B9610F866A4A72AD34266A"
+               BlueprintIdentifier = "54EE15CA7DA84FFFBB630742"
                BuildableName = "EarTalk.app"
                BlueprintName = "EarTalk"
                ReferencedContainer = "container:EarTalk.xcodeproj">
@@ -43,7 +43,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "D6B9610F866A4A72AD34266A"
+            BlueprintIdentifier = "54EE15CA7DA84FFFBB630742"
             BuildableName = "EarTalk.app"
             BlueprintName = "EarTalk"
             ReferencedContainer = "container:EarTalk.xcodeproj">
@@ -60,7 +60,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "D6B9610F866A4A72AD34266A"
+            BlueprintIdentifier = "54EE15CA7DA84FFFBB630742"
             BuildableName = "EarTalk.app"
             BlueprintName = "EarTalk"
             ReferencedContainer = "container:EarTalk.xcodeproj">

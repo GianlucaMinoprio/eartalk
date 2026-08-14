@@ -80,6 +80,11 @@ enum XAIClientError: LocalizedError {
     }
 }
 
+struct STTResult: Equatable {
+    let text: String
+    let language: String?
+}
+
 actor XAIClient {
     private let session: URLSession
     private let baseURL = URL(string: "https://api.x.ai/v1")!
@@ -90,7 +95,7 @@ actor XAIClient {
 
     // MARK: - STT
 
-    func transcribe(fileURL: URL, bearer: String, language: String) async throws -> String {
+    func transcribe(fileURL: URL, bearer: String, language: String?) async throws -> STTResult {
         let bearer = bearer.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !bearer.isEmpty else { throw XAIClientError.missingAPIKey }
 
@@ -114,9 +119,11 @@ actor XAIClient {
 
         // Options must precede file per xAI STT docs
         appendField(name: "format", value: "true")
-        let language = language.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !language.isEmpty {
-            appendField(name: "language", value: language)
+        if let language {
+            let language = language.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !language.isEmpty {
+                appendField(name: "language", value: language)
+            }
         }
 
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
@@ -133,7 +140,7 @@ actor XAIClient {
         let decoded = try JSONDecoder().decode(STTResponse.self, from: data)
         let text = decoded.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { throw XAIClientError.emptyTranscript }
-        return text
+        return STTResult(text: text, language: decoded.language)
     }
 
     // MARK: - Translate
@@ -275,6 +282,7 @@ actor XAIClient {
 private struct STTResponse: Decodable {
     let text: String
     let duration: Double?
+    let language: String?
 }
 
 private struct ChatCompletionResponse: Decodable {
